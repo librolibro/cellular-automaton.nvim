@@ -1,5 +1,21 @@
 ---@alias Buffers [integer, integer]
 
+--- Highlight group parameters (needed for
+--- proper 'nvim_buf_set_extmark()' call)
+---
+---@class CellularAutomatonHl
+---
+--- Name of the highlight group
+---@field name string
+---
+--- Highlight group priority (see
+--- 'vim.highlight.priorities' for default values)
+---@field priority integer
+---
+--- TODO: Need to add 'source' field?
+--- TODO: Add 'conceal' field when
+---   conceal will be supported
+
 --- Single cellular automaton's cell
 ---
 ---@class CellularAutomatonCell
@@ -10,9 +26,9 @@
 ---   composing characters as well)
 ---@field char string
 ---
---- Appropriate highlight group
---- for cell (or empty string)
----@field hl_group string
+--- Highlight group for cell (usually requested via
+--- 'inspect_pos()') (might be empty if no highlights needed)
+---@field hl_groups CellularAutomatonHl[]
 
 --- Two-dimensional grid representing
 --- current cellular automaton's state

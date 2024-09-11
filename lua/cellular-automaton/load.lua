@@ -6,17 +6,23 @@ local M = {}
 --- TODO(libro): rewrite it using 'inspect_pos()'
 ---   for more versatile and precise highlighting
 ---@param buffer integer
+---@param cell CellularAutomatonCell
 ---@param i integer line number (1-based)
 ---@param j integer column number (byte index, 1-based)
----@return string
-local get_dominant_hl_group = function(buffer, i, j)
+local get_dominant_hl_group = function(buffer, cell, i, j)
+  if not vim.tbl_isempty(cell.hl_groups) then
+    return
+  end
   local captures = vim.treesitter.get_captures_at_pos(buffer, i - 1, j - 1)
   for c = #captures, 1, -1 do
     if captures[c].capture ~= "spell" and captures[c].capture ~= "@spell" then
-      return "@" .. captures[c].capture
+      cell.hl_groups[#cell.hl_groups + 1] = {
+        name = "@" .. captures[c].capture,
+        priority = captures[c].metadata.priority or vim.highlight.priorities.treesitter,
+      }
+      return
     end
   end
-  return ""
 end
 
 --- Load base grid (replace multicell
@@ -47,7 +53,7 @@ M.load_base_grid = function(window, buffer)
   for i = 1, vim.api.nvim_win_get_height(window) do
     grid[i] = {}
     for j = 1, window_width do
-      grid[i][j] = { char = " ", hl_group = "" }
+      grid[i][j] = { char = " ", hl_groups = {} }
     end
   end
   local data = vim.api.nvim_buf_get_lines(buffer, first_lineno, first_lineno + wininfo.height, false)
@@ -58,6 +64,9 @@ M.load_base_grid = function(window, buffer)
     local col = 0
     local virtcol = 0
     local lineno = first_lineno + i
+
+    ---@type CellularAutomatonCell
+    local cell
 
     ---@type integer
     local char_screen_col_start
@@ -109,17 +118,22 @@ M.load_base_grid = function(window, buffer)
           if jj > window_width then
             goto to_next_line
           end
-          grid[i][jj].char = replacer
-          grid[i][jj].hl_group = hl_group
+          cell = grid[i][jj]
+          cell.char = replacer
+          cell.hl_groups[#cell.hl_groups + 1] = {
+            name = hl_group,
+            priority = vim.highlight.priorities.user,
+          }
         end
       else
         jj = jj + 1
         if jj > window_width then
           goto to_next_line
         end
-        grid[i][jj].char = char
+        cell = grid[i][jj]
+        cell.char = char
         if char ~= " " then
-          grid[i][jj].hl_group = get_dominant_hl_group(buffer, lineno, virtcol)
+          get_dominant_hl_group(buffer, cell, lineno, virtcol)
         end
       end
       ::to_next_char::

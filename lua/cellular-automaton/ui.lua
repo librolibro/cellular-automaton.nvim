@@ -130,8 +130,8 @@ M.render_frame = function(grid)
     for j, cell in ipairs(row) do
       local char_len = string.len(cell.char)
       local col_start = j - 1 + offset
-      if cell.hl_group and cell.hl_group ~= "" then
-        vim.api.nvim_buf_add_highlight(buffnr, namespace, cell.hl_group, i - 1, col_start, col_start + char_len)
+      for _, hl_group in ipairs(cell.hl_groups) do
+        vim.api.nvim_buf_add_highlight(buffnr, namespace, hl_group.name, i - 1, col_start, col_start + char_len)
       end
       if char_len > 1 then
         offset = offset + char_len - 1
