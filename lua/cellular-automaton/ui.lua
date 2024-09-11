@@ -131,7 +131,14 @@ M.render_frame = function(grid)
       local char_len = string.len(cell.char)
       local col_start = j - 1 + offset
       for _, hl_group in ipairs(cell.hl_groups) do
-        vim.api.nvim_buf_add_highlight(buffnr, namespace, hl_group.name, i - 1, col_start, col_start + char_len)
+        vim.api.nvim_buf_set_extmark(buffnr, namespace, i - 1, col_start, {
+          end_row = i - 1,
+          end_col = col_start + char_len,
+          priority = hl_group.priority,
+          hl_group = hl_group.name,
+          conceal = nil,
+          spell = false,
+        })
       end
       if char_len > 1 then
         offset = offset + char_len - 1

@@ -2,7 +2,15 @@ local unpack = unpack or table.unpack
 
 local M = {}
 
---- Retrieve "most dominant" highlight group for given position
+---@param name string
+---@return boolean
+local is_hl_group_a_spell = function(name)
+  return name:find("^@?spell$") ~= nil or name:find("^@?nospell$") ~= nil
+end
+
+--- Get old-style most dominant highlight group (if old-style syntax
+--- highlighting is using) and all extended marks (TS highlighting,
+--- LSP semantic tokens and any other kinds of extmarks with hl group)
 --- TODO(libro): rewrite it using 'inspect_pos()'
 ---   for more versatile and precise highlighting
 ---@param buffer integer
@@ -13,15 +21,49 @@ local get_dominant_hl_group = function(buffer, cell, i, j)
   if not vim.tbl_isempty(cell.hl_groups) then
     return
   end
-  local captures = vim.treesitter.get_captures_at_pos(buffer, i - 1, j - 1)
-  for c = #captures, 1, -1 do
-    if captures[c].capture ~= "spell" and captures[c].capture ~= "@spell" then
-      cell.hl_groups[#cell.hl_groups + 1] = {
-        name = "@" .. captures[c].capture,
-        priority = captures[c].metadata.priority or vim.highlight.priorities.treesitter,
+  local hl_groups = cell.hl_groups
+  local items = vim.inspect_pos(buffer, i - 1, j - 1, {
+    syntax = true,
+    treesitter = true,
+    semantic_tokens = false,
+    extmarks = false,
+  })
+
+  -- FIXME(libro): As lewis6991 said in
+  --   https://github.com/nvim-treesitter/nvim-treesitter-context/blob/e6cc783b74606d97ca9eff6494e3f5c2ca603a50/lua/treesitter-context/render.lua#L167
+  --   extmarks of equal priority appear to apply highlights differently with 'ephemeral' being true and false.
+  --   While I don't like the approach to simply increment every priority (he only used TS extmarks to be fair),
+  --   there should be some workaround to properly reproduce all of the buffer highlightings
+  -- TODO(libro): turn 'semantic_tokens' and 'extmarks' on when as soon as this workaround will be implemented
+
+  if not vim.tbl_isempty(items.syntax) then
+    hl_groups[#hl_groups + 1] = {
+      name = assert(items.syntax[#items.syntax].hl_group),
+      priority = vim.highlight.priorities.syntax,
+    }
+  end
+
+  for _, item in ipairs(items.treesitter) do
+    if not is_hl_group_a_spell(item.capture) then
+      hl_groups[#hl_groups + 1] = {
+        name = assert(item.hl_group),
+        priority = tonumber(item.metadata.priority) or vim.highlight.priorities.treesitter,
       }
-      return
     end
+  end
+
+  for _, item in ipairs(items.semantic_tokens) do
+    hl_groups[#hl_groups + 1] = {
+      name = assert(item.opts.hl_group),
+      priority = item.opts.priority or vim.highlight.priorities.semantic_tokens,
+    }
+  end
+
+  for _, item in ipairs(items.extmarks) do
+    hl_groups[#hl_groups + 1] = {
+      name = assert(item.opts.hl_group),
+      priority = item.opts.priority or vim.highlight.priorities.user,
+    }
   end
 end
 
