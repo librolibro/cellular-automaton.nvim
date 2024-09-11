@@ -22,9 +22,9 @@ M.open_window = function(host_window)
   }
   local buffnr = get_buffer()
   window_id = vim.api.nvim_open_win(buffnr, true, {
-    relative = "editor",
+    relative = "win",
     width = vim.api.nvim_win_get_width(host_window),
-    height = vim.api.nvim_win_get_height(host_window),
+    height = vim.fn.getwininfo(host_window)[1].height,
     border = "none",
     row = 0,
     col = 0,
