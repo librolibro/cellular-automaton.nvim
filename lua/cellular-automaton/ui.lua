@@ -16,19 +16,75 @@ local get_buffer = (function()
 end)()
 
 M.open_window = function(host_window)
+  if host_window == nil or host_window == 0 then
+    host_window = vim.api.nvim_get_current_win()
+  end
+
   buffers = {
     vim.api.nvim_create_buf(false, true),
     vim.api.nvim_create_buf(false, true),
   }
   local buffnr = get_buffer()
+  local wininfo = vim.fn.getwininfo(host_window)[1]
   window_id = vim.api.nvim_open_win(buffnr, true, {
     relative = "win",
     width = vim.api.nvim_win_get_width(host_window),
-    height = vim.fn.getwininfo(host_window)[1].height,
+    height = wininfo.height,
     border = "none",
     row = 0,
     col = 0,
   })
+
+  vim.wo[window_id].relativenumber = false
+  if wininfo.textoff == 0 then
+    vim.wo[window_id].number = false
+    vim.wo[window_id].signcolumn = "no"
+    vim.wo[window_id].foldcolumn = "0"
+  else
+    -- Reproducing host_window's textoff
+    -- using big fixed 'nuw', 'scl' and 'fdc'
+    local textoff_left = wininfo.textoff
+
+    local nuw_limit = 20
+    local calc_nuw = tostring(wininfo.height):len() + 1
+    assert(calc_nuw <= nuw_limit)
+
+    if textoff_left >= calc_nuw then
+      ---@type integer?
+      local nuw = nil
+      if textoff_left >= nuw_limit then
+        nuw = nuw_limit
+      elseif textoff_left >= calc_nuw then
+        nuw = textoff_left
+      else
+        vim.wo[window_id].number = false
+      end
+      if nuw then
+        vim.wo[window_id].number = true
+        vim.wo[window_id].numberwidth = nuw
+        textoff_left = textoff_left - nuw
+      end
+    end
+
+    if textoff_left > 0 then
+      local scl_width = math.min(textoff_left, 9 * 2)
+      if math.fmod(scl_width, 2) == 1 then
+        scl_width = scl_width - 1
+      end
+      vim.wo[window_id].signcolumn = string.format("yes:%d", scl_width / 2)
+      textoff_left = textoff_left - scl_width
+    end
+
+    if textoff_left > 0 then
+      local fdc_width = math.min(textoff_left, 9)
+      vim.wo[window_id].foldcolumn = tostring(fdc_width)
+      textoff_left = textoff_left - fdc_width
+    end
+
+    if textoff_left > 0 then
+      error(string.format("textoff_left=%d (textoff=%d)", textoff_left, wininfo.textoff))
+    end
+  end
 
   vim.wo[window_id].winhl = "Normal:CellularAutomatonNormal"
   vim.wo[window_id].list = false
