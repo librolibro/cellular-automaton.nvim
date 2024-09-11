@@ -1,0 +1,18 @@
+--- Single cellular automaton's cell
+---
+---@class CellularAutomatonCell
+---
+--- Char representing one cell
+--- NOTE: it always occupies one virtual column
+---   but may consist of several bytes (maybe
+---   composing characters as well)
+---@field char string
+---
+--- Appropriate highlight group
+--- for cell (or empty string)
+---@field hl_group string
+
+--- Two-dimensional grid representing
+--- current cellular automaton's state
+---
+---@alias CellularAutomatonGrid CellularAutomatonCell[][]

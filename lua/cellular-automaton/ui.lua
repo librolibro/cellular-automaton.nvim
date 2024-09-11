@@ -4,17 +4,25 @@ local window_id = nil
 local buffers = nil
 local namespace = vim.api.nvim_create_namespace("cellular-automaton")
 
+---@alias Buffers [integer, integer]
+
 -- Each frame is rendered in different buffer to avoid flickering
 -- caused by lack of higliths right after setting the buffer data.
 -- Thus we are switching between two buffers throughtout the animation
+---@type fun():integer
 local get_buffer = (function()
   local count = 0
   return function()
     count = count + 1
-    return buffers[count % 2 + 1]
+    return buffers--[[@as Buffers]][count % 2 + 1]
   end
 end)()
 
+--- Create new floating window and
+--- buffers for cellular automaton
+---@param host_window integer?
+---@return integer
+---@return Buffers
 M.open_window = function(host_window)
   if host_window == nil or host_window == 0 then
     host_window = vim.api.nvim_get_current_win()
@@ -91,7 +99,7 @@ M.open_window = function(host_window)
   return window_id, buffers
 end
 
----@param grid {char: string, hl_group: string}[][]
+---@param grid CellularAutomatonGrid
 M.render_frame = function(grid)
   -- quit if animation already interrupted
   if window_id == nil or not vim.api.nvim_win_is_valid(window_id) then

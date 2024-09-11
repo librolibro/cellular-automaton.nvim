@@ -2,6 +2,13 @@ local unpack = unpack or table.unpack
 
 local M = {}
 
+--- Retrieve "most dominant" highlight group for given position
+--- TODO(libro): rewrite it using 'inspect_pos()'
+---   for more versatile and precise highlighting
+---@param buffer integer
+---@param i integer line number (1-based)
+---@param j integer column number (byte index, 1-based)
+---@return string
 local get_dominant_hl_group = function(buffer, i, j)
   local captures = vim.treesitter.get_captures_at_pos(buffer, i - 1, j - 1)
   for c = #captures, 1, -1 do
@@ -12,11 +19,11 @@ local get_dominant_hl_group = function(buffer, i, j)
   return ""
 end
 
----Load base grid (replace multicell
----symbols and tabs with replacers)
+--- Load base grid (replace multicell
+--- symbols and tabs with replacers)
 ---@param window integer?
 ---@param buffer integer?
----@return { char: string, hl_group: string}[][]
+---@return CellularAutomatonGrid
 M.load_base_grid = function(window, buffer)
   if window == nil or window == 0 then
     -- NOTE: virtcol call with *winid*
@@ -35,7 +42,7 @@ M.load_base_grid = function(window, buffer)
   local last_visible_virtcol = first_visible_virtcol + window_width
 
   -- initialize the grid
-  ---@type {char: string, hl_group: string}[][]
+  ---@type CellularAutomatonGrid
   local grid = {}
   for i = 1, vim.api.nvim_win_get_height(window) do
     grid[i] = {}
