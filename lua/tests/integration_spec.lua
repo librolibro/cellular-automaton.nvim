@@ -23,6 +23,7 @@ describe("integration", function()
   it("unhandled error doesn't break next animations", function()
     local test_animation = {
       name = "test",
+      fps = 1,
       update = function()
         error("test error")
       end,

@@ -4,6 +4,10 @@ local ui = require("cellular-automaton.ui")
 local common = require("cellular-automaton.common")
 local animation_in_progress = false
 
+--- Processing another frame
+---@param grid CellularAutomatonGrid
+---@param animation_config CellularAutomatonConfig
+---@param win_id integer
 local function process_frame(grid, animation_config, win_id)
   -- quit if animation already interrupted
   if win_id == nil or not vim.api.nvim_win_is_valid(win_id) then
@@ -25,6 +29,8 @@ local function process_frame(grid, animation_config, win_id)
   end
 end
 
+---@param win_id integer
+---@param buffers Buffers
 local function setup_cleaning(win_id, buffers)
   local exit_keys = { "q", "Q", "<ESC>", "<CR>" }
   for _, key in ipairs(exit_keys) do
@@ -45,8 +51,11 @@ local function setup_cleaning(win_id, buffers)
     pattern = tostring(win_id),
     callback = M.clean,
   })
+  -- TODO(libro): Many other events should also
+  --   quit the animation (e.g. WinResized)
 end
 
+---@param animation_config CellularAutomatonConfig
 local function _execute_animation(animation_config)
   if animation_in_progress then
     error("Nested animations are forbidden")
@@ -63,6 +72,7 @@ local function _execute_animation(animation_config)
   setup_cleaning(win_id, buffers)
 end
 
+---@param animation_config CellularAutomatonConfig
 M.execute_animation = function(animation_config)
   local ok, err = pcall(_execute_animation, animation_config)
   if not ok then

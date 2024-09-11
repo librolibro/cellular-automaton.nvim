@@ -1,3 +1,5 @@
+---@alias Buffers [integer, integer]
+
 --- Single cellular automaton's cell
 ---
 ---@class CellularAutomatonCell
@@ -16,3 +18,20 @@
 --- current cellular automaton's state
 ---
 ---@alias CellularAutomatonGrid CellularAutomatonCell[][]
+
+--- Cellular automaton's (and animation's) common configuration
+---
+---@class CellularAutomatonConfig
+---
+--- Animation name
+---@field name string
+---
+--- Frames per seconds for animation
+---@field fps integer
+---
+--- (Optional) function for grid initialization
+---@field init fun(CellularAutomatonGrid)?
+---
+--- Update function. Return true to notify that automaton
+--- state has been changed and further processing needed
+---@field update fun(CellularAutomatonGrid):boolean

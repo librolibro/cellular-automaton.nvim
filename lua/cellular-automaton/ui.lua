@@ -1,10 +1,17 @@
 local M = {}
 
-local window_id = nil
-local buffers = nil
-local namespace = vim.api.nvim_create_namespace("cellular-automaton")
+-- NOTE: When nested animations will
+--   be supported make a table of these
 
----@alias Buffers [integer, integer]
+--- Number of floating window for animation (if present)
+---
+---@type integer?
+local window_id = nil
+
+---@type Buffers?
+local buffers = nil
+
+local namespace = vim.api.nvim_create_namespace("cellular-automaton")
 
 -- Each frame is rendered in different buffer to avoid flickering
 -- caused by lack of higliths right after setting the buffer data.
@@ -136,14 +143,15 @@ M.render_frame = function(grid)
 end
 
 M.clean = function()
-  buffers = buffers or {}
-  for _, buffnr in ipairs(buffers) do
-    if vim.api.nvim_buf_is_valid(buffnr) then
-      vim.api.nvim_buf_delete(buffnr, { force = true })
+  if buffers then
+    for _, buffnr in ipairs(buffers) do
+      if vim.api.nvim_buf_is_valid(buffnr) then
+        vim.api.nvim_buf_delete(buffnr, { force = true })
+      end
     end
+    buffers = nil
   end
   window_id = nil
-  buffers = nil
 end
 
 return M

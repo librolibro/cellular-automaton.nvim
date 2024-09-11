@@ -1,42 +1,37 @@
-local M = {}
-
 local manager = require("cellular-automaton.manager")
 
-M.animations = {
-  make_it_rain = require("cellular-automaton.animations.make_it_rain"),
-  game_of_life = require("cellular-automaton.animations.game_of_life"),
-  scramble = require("cellular-automaton.animations.scramble"),
-}
+local M = {}
 
-local apply_default_options = function(config)
-  local default = {
-    name = "",
-    update = function() end,
-    init = function() end,
-    fps = 50,
-  }
-  for k, v in pairs(config) do
-    default[k] = v
-  end
-  return default
-end
+---@type table<string, CellularAutomatonConfig>
+M.animations = {}
 
+---@param config CellularAutomatonConfig
 M.register_animation = function(config)
-  -- "module" should implement update_grid(grid) method which takes 2D "grid"
-  -- table of cells and updates it in place. Each "cell" is a table with following
-  -- fields {"hl_group", "char"}
-  if config.update == nil then
-    error("Animation module must implement update function")
-    return
-  end
-  if config.name == nil then
-    error("Animation module must have 'name' field")
-    return
-  end
+  vim.validate("config", config, "table")
+  vim.validate({
+    fps = { config.fps, "number" },
+    name = { config.name, "string" },
+    init = { config.init, { "function", "nil" } },
+    update = { config.update, "function" },
+  })
 
-  M.animations[config.name] = apply_default_options(config)
+  M.animations[config.name] = config
 end
 
+---@param name string
+local register_builtin_animation = function(name)
+  local config = assert(require(string.format("cellular-automaton.animations.%s", name)))
+  if not config.name or config.name == "" then
+    config.name = name
+  end
+  M.register_animation(config)
+end
+
+register_builtin_animation("make_it_rain")
+register_builtin_animation("game_of_life")
+register_builtin_animation("scramble")
+
+---@param animation_name string
 M.start_animation = function(animation_name)
   -- Make sure animaiton exists
   if M.animations[animation_name] == nil then
