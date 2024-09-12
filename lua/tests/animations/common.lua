@@ -1,14 +1,23 @@
+local assert = require("luassert")
+
 local M = {}
 
+---@param pattern string[]
+---@return CellularAutomatonGrid
 M.get_grid = function(pattern)
+  ---@type CellularAutomatonGrid
   local grid = {}
   for _, line in ipairs(pattern) do
     local row = {}
     for i = 1, #line do
       local char = line:sub(i, i)
-      local cell = { char = char }
+      ---@type CellularAutomatonCell
+      local cell = { char = char, hl_groups = {} }
       if char == "#" then
-        cell.hl_group = "@comment"
+        cell.hl_groups[#cell.hl_groups + 1] = {
+          name = "@comment",
+          priority = vim.highlight.priorities.user,
+        }
       end
       table.insert(row, cell)
     end
