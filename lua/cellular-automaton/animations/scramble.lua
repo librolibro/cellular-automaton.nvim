@@ -3,10 +3,14 @@ local M = {
   name = "scramble",
 }
 
+---@param c string
+---@return boolean
 local function is_alphanumeric(c)
   return c >= "a" and c <= "z" or c >= "A" and c <= "Z" or c >= "0" and c <= "9"
 end
 
+---@param word string[]
+---@return string[]
 local scramble_word = function(word)
   local chars = {}
   while #word ~= 0 do

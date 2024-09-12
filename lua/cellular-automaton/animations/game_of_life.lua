@@ -5,13 +5,18 @@ local M = {
   respawn_condition = 3,
 }
 
+---@param grid CellularAutomatonGrid
+---@param x integer
+---@param y integer
+---@return boolean
 local function is_cell_alive(grid, x, y)
-  if x > 0 and x <= #grid and y > 0 and y <= #grid[x] and grid[x][y].char ~= " " then
-    return true
-  end
-  return false
+  return x > 0 and x <= #grid and y > 0 and y <= #grid[x] and grid[x][y].char ~= " "
 end
 
+---@param grid CellularAutomatonGrid
+---@param x integer
+---@param y integer
+---@return CellularAutomatonCell[]
 local function get_neighbours(grid, x, y)
   local neighbours = {}
   local coords = {
@@ -34,14 +39,25 @@ local function get_neighbours(grid, x, y)
   return neighbours
 end
 
+---@param grid CellularAutomatonGrid
+---@param x integer
+---@param y integer
+---@return integer
 local function count_neighbours(grid, x, y)
   return #(get_neighbours(grid, x, y))
 end
 
+---@param grid CellularAutomatonGrid
+---@param x integer
+---@param y integer
 local function kill_cell(grid, x, y)
-  grid[x][y] = { char = " " }
+  grid[x][y] = { char = " ", hl_groups = {} }
 end
 
+---@param grid CellularAutomatonGrid
+---@param prev_grid CellularAutomatonGrid
+---@param x integer
+---@param y integer
 local function respawn_cell(grid, prev_grid, x, y)
   local neighbours = get_neighbours(prev_grid, x, y)
   grid[x][y] = vim.deepcopy(neighbours[math.random(1, #neighbours)])
