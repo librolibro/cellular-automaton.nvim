@@ -43,8 +43,8 @@ local get_dominant_hl_group = function(buffer, cell, i, j)
   local items = vim.inspect_pos(buffer, i - 1, j - 1, {
     syntax = true,
     treesitter = true,
-    semantic_tokens = false,
-    extmarks = false,
+    semantic_tokens = true,
+    extmarks = true,
   })
 
   ---@type _CA_PriorityCounters
