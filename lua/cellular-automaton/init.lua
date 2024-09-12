@@ -8,12 +8,10 @@ M.animations = {}
 ---@param config CellularAutomatonConfig
 M.register_animation = function(config)
   vim.validate("config", config, "table")
-  vim.validate({
-    fps = { config.fps, "number" },
-    name = { config.name, "string" },
-    init = { config.init, { "function", "nil" } },
-    update = { config.update, "function" },
-  })
+  vim.validate("config.fps", config.fps, "number")
+  vim.validate("config.name", config.name, "string")
+  vim.validate("config.init", config.init, "function", true)
+  vim.validate("config.update", config.update, "function")
 
   M.animations[config.name] = config
 end
