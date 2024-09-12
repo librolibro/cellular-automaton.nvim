@@ -19,6 +19,7 @@ end
 ---@param j integer column number (byte index, 1-based)
 local get_dominant_hl_group = function(buffer, cell, i, j)
   if not vim.tbl_isempty(cell.hl_groups) then
+    -- Cell was already initialized
     return
   end
   local hl_groups = cell.hl_groups

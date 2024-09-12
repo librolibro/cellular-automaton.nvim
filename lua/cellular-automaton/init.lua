@@ -38,21 +38,6 @@ M.start_animation = function(animation_name)
     error("Error while starting an animation. Unknown cellular-automaton animation: " .. animation_name)
   end
 
-  -- Make sure nvim treesitter parser exists for current buffer
-  local filetype = vim.bo.filetype
-  local function raise_if_parser_missing()
-    vim.treesitter.language.inspect(filetype)
-  end
-  local success, err = pcall(raise_if_parser_missing)
-  if not success then
-    error(
-      "Error while starting an animation. Current buffer doesn't have associated tree-sitter parser for "
-        .. filetype
-        .. ".\n"
-        .. err
-    )
-  end
-
   manager.execute_animation(M.animations[animation_name])
 end
 
