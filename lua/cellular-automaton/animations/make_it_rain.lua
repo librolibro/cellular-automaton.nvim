@@ -6,19 +6,45 @@ local M = {
 
 local frame
 
-local cell_empty = function(grid, x, y)
-  if x > 0 and x <= #grid and y > 0 and y <= #grid[x] and grid[x][y].char == " " then
-    return true
+---@param cell CellularAutomatonCell
+---@param ... string
+---@return boolean
+local cell_hl_matches = function(cell, ...)
+  for _, pattern in ipairs({ ... }) do
+    for _, hl_group in ipairs(cell.hl_groups) do
+      if hl_group.name:find(pattern) then
+        return true
+      end
+    end
   end
   return false
 end
 
+---@param grid CellularAutomatonGrid
+---@param x integer
+---@param y integer
+---@return boolean
+local cell_empty = function(grid, x, y)
+  return x > 0 and x <= #grid and y > 0 and y <= #grid[x] and grid[x][y].char == " "
+end
+
+---@param grid CellularAutomatonGrid
+---@param x1 integer
+---@param y1 integer
+---@param x2 integer
+---@param y2 integer
 local swap_cells = function(grid, x1, y1, x2, y2)
   grid[x1][y1], grid[x2][y2] = grid[x2][y2], grid[x1][y1]
 end
 
 M.init = function(grid)
   frame = 1
+  for i = 1, #grid do
+    for j = 1, #grid[i] do
+      local cell = grid[i][j]
+      cell.should_not_fall = cell.char == " " or cell_hl_matches(cell, "[cC]omment")
+    end
+  end
 end
 
 M.update = function(grid)
@@ -45,7 +71,7 @@ M.update = function(grid)
       local cell = grid[x0][y0]
 
       -- skip spaces and comments or already proccessed cells
-      if cell.char == " " or string.find(cell.hl_group or "", "comment") or cell.processed == true then
+      if cell.should_not_fall or cell.processed == true then
         goto continue
       end
 
