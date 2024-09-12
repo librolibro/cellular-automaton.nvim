@@ -8,11 +8,28 @@ local is_hl_group_a_spell = function(name)
   return name:find("^@?spell$") ~= nil or name:find("^@?nospell$") ~= nil
 end
 
+--- table<priority, {total: amount_of_hls_with_this_priority, current_offset: current_offset}>
+---@alias _CA_PriorityCounters table<integer, {total: integer, current_offset: integer}>
+
+---@param name string
+---@param priority integer
+---@param hl_groups CellularAutomatonHl[]
+---@param priority_counters _CA_PriorityCounters
+local new_hl_group = function(name, priority, hl_groups, priority_counters)
+  hl_groups[#hl_groups + 1] = {
+    name = name,
+    priority = priority,
+  }
+  if priority_counters[priority] ~= nil then
+    priority_counters[priority].total = priority_counters[priority].total + 1
+  else
+    priority_counters[priority] = { total = 1, current_offset = 0 }
+  end
+end
+
 --- Get old-style most dominant highlight group (if old-style syntax
 --- highlighting is using) and all extended marks (TS highlighting,
 --- LSP semantic tokens and any other kinds of extmarks with hl group)
---- TODO(libro): rewrite it using 'inspect_pos()'
----   for more versatile and precise highlighting
 ---@param buffer integer
 ---@param cell CellularAutomatonCell
 ---@param i integer line number (1-based)
@@ -30,41 +47,61 @@ local get_dominant_hl_group = function(buffer, cell, i, j)
     extmarks = false,
   })
 
-  -- FIXME(libro): As lewis6991 said in
-  --   https://github.com/nvim-treesitter/nvim-treesitter-context/blob/e6cc783b74606d97ca9eff6494e3f5c2ca603a50/lua/treesitter-context/render.lua#L167
-  --   extmarks of equal priority appear to apply highlights differently with 'ephemeral' being true and false.
-  --   While I don't like the approach to simply increment every priority (he only used TS extmarks to be fair),
-  --   there should be some workaround to properly reproduce all of the buffer highlightings
-  -- TODO(libro): turn 'semantic_tokens' and 'extmarks' on when as soon as this workaround will be implemented
+  ---@type _CA_PriorityCounters
+  local priority_counters = {}
 
   if not vim.tbl_isempty(items.syntax) then
-    hl_groups[#hl_groups + 1] = {
-      name = assert(items.syntax[#items.syntax].hl_group),
-      priority = vim.highlight.priorities.syntax,
-    }
+    new_hl_group(
+      assert(items.syntax[#items.syntax].hl_group),
+      vim.highlight.priorities.syntax,
+      hl_groups,
+      priority_counters
+    )
   end
 
   for _, item in ipairs(items.treesitter) do
     if not is_hl_group_a_spell(item.capture) then
-      hl_groups[#hl_groups + 1] = {
-        name = assert(item.hl_group),
-        priority = tonumber(item.metadata.priority) or vim.highlight.priorities.treesitter,
-      }
+      new_hl_group(
+        assert(item.hl_group),
+        tonumber(item.metadata.priority) or vim.highlight.priorities.treesitter,
+        hl_groups,
+        priority_counters
+      )
     end
   end
 
   for _, item in ipairs(items.semantic_tokens) do
-    hl_groups[#hl_groups + 1] = {
-      name = assert(item.opts.hl_group),
-      priority = item.opts.priority or vim.highlight.priorities.semantic_tokens,
-    }
+    new_hl_group(
+      assert(item.opts.hl_group),
+      item.opts.priority or vim.highlight.priorities.semantic_tokens,
+      hl_groups,
+      priority_counters
+    )
   end
 
   for _, item in ipairs(items.extmarks) do
-    hl_groups[#hl_groups + 1] = {
-      name = assert(item.opts.hl_group),
-      priority = item.opts.priority or vim.highlight.priorities.user,
-    }
+    new_hl_group(
+      assert(item.opts.hl_group),
+      item.opts.priority or vim.highlight.priorities.user,
+      hl_groups,
+      priority_counters
+    )
+  end
+
+  -- Tricky part now ... We need to make all priority values unique and also save their order
+  -- (see https://github.com/nvim-treesitter/nvim-treesitter-context/blob/e6cc783b74606d97ca9eff6494e3f5c2ca603a50/lua/treesitter-context/render.lua#L167
+  -- if you want to know why it's important for extmark-based highlighting reproducing)
+
+  for _, hl_group in ipairs(hl_groups) do
+    local orig_priority = hl_group.priority
+    for priority, prio in pairs(priority_counters) do
+      if priority == orig_priority then
+        hl_group.priority = hl_group.priority + prio.current_offset
+        prio.current_offset = prio.current_offset + 1
+      elseif priority < orig_priority then
+        hl_group.priority = hl_group.priority + prio.total
+      end
+    end
   end
 end
 
