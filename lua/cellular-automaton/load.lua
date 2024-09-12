@@ -28,7 +28,7 @@ M.load_base_grid = function(window, buffer)
   end
 
   local wininfo = vim.fn.getwininfo(window)[1]
-  local window_width = vim.api.nvim_win_get_width(window) - wininfo.textoff
+  local window_width = wininfo.width - wininfo.textoff
   local first_lineno = wininfo.topline - 1
 
   local first_visible_virtcol = vim.fn.winsaveview().leftcol + 1
@@ -37,7 +37,7 @@ M.load_base_grid = function(window, buffer)
   -- initialize the grid
   ---@type {char: string, hl_group: string}[][]
   local grid = {}
-  for i = 1, vim.api.nvim_win_get_height(window) do
+  for i = 1, wininfo.height do
     grid[i] = {}
     for j = 1, window_width do
       grid[i][j] = { char = " ", hl_group = "" }
