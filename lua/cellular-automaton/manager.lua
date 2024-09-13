@@ -4,10 +4,17 @@ local ui = require("cellular-automaton.ui")
 local common = require("cellular-automaton.common")
 local animation_in_progress = false
 
+---@type integer
+local augroup = nil
+local reset_augroup = function()
+  augroup = vim.api.nvim_create_augroup("CellularAutomaton", { clear = true })
+end
+reset_augroup()
+
 --- Processing another frame
 ---@param grid CellularAutomatonGrid
 ---@param animation_config CellularAutomatonConfig
----@param win_id integer
+---@param win_id? integer
 local function process_frame(grid, animation_config, win_id)
   -- quit if animation already interrupted
   if win_id == nil or not vim.api.nvim_win_is_valid(win_id) then
@@ -29,6 +36,16 @@ local function process_frame(grid, animation_config, win_id)
   end
 end
 
+---@param events string|string[]
+---@param opts? {pattern?: string}
+local clean_on_events = function(events, opts)
+  ---@type table
+  opts = opts or {}
+  opts.group = augroup
+  opts.callback = M.clean
+  vim.api.nvim_create_autocmd(events, opts)
+end
+
 ---@param win_id integer
 ---@param buffers Buffers
 local function setup_cleaning(win_id, buffers)
@@ -36,6 +53,7 @@ local function setup_cleaning(win_id, buffers)
   for _, key in ipairs(exit_keys) do
     for _, buffer_id in ipairs(buffers) do
       for _, mode in ipairs({ "n", "i" }) do
+        -- TODO: use new 'vim.keymap.set' API
         vim.api.nvim_buf_set_keymap(
           buffer_id,
           mode,
@@ -46,13 +64,12 @@ local function setup_cleaning(win_id, buffers)
       end
     end
   end
-  vim.api.nvim_create_autocmd("WinClosed", {
-    group = vim.api.nvim_create_augroup("CellularAutomoton", { clear = true }),
-    pattern = tostring(win_id),
-    callback = M.clean,
-  })
-  -- TODO(libro): Many other events should also
-  --   quit the animation (e.g. WinResized)
+  -- NOTE(libro): VimResized with pattern (like
+  --   WinClosed lower) doesn't work (should it?)
+  clean_on_events("VimResized")
+  clean_on_events("WinClosed", { pattern = tostring(win_id) })
+  clean_on_events("TabClosed", { pattern = tostring(vim.api.nvim_get_current_tabpage()) })
+  clean_on_events("TabLeave")
 end
 
 ---@param animation_config CellularAutomatonConfig
@@ -81,8 +98,18 @@ M.execute_animation = function(animation_config)
   end
 end
 
-M.clean = function()
+--- NOTE: *event_data* is a table with ':h event-args'
+---   if called from autocommand's callback
+---@param event_data table?
+M.clean = function(event_data)
+  if not animation_in_progress then
+    return
+  end
+  -- TODO: More info? (name, how long did it last etc.)
+  local msg = "Animation stopped" .. (event_data and string.format(" from %s event", assert(event_data.event)) or "")
+  vim.api.nvim_echo({ { msg, "DiagnosticInfo" } }, true, {})
   animation_in_progress = false
+  reset_augroup()
   ui.clean()
 end
 
