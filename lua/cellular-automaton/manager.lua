@@ -2,7 +2,23 @@ local M = {}
 
 local ui = require("cellular-automaton.ui")
 local common = require("cellular-automaton.common")
-local animation_in_progress = false
+
+---@type string?
+local current_animation_name = nil
+
+---@type integer?
+local animation_start_time_ms = nil
+
+---@return integer
+local monotonic_ms = function()
+  ---@diagnostic disable-next-line: undefined-field
+  return vim.uv.now()
+end
+
+---@return boolean
+local animation_in_progress = function()
+  return current_animation_name ~= nil and animation_start_time_ms ~= nil
+end
 
 ---@type integer
 local augroup = nil
@@ -74,10 +90,10 @@ end
 
 ---@param animation_config CellularAutomatonConfig
 local function _execute_animation(animation_config)
-  if animation_in_progress then
+  if animation_in_progress() then
     error("Nested animations are forbidden")
   end
-  animation_in_progress = true
+  current_animation_name = assert(animation_config.name)
   local host_win_id = vim.api.nvim_get_current_win()
   local host_bufnr = vim.api.nvim_get_current_buf()
   local grid = require("cellular-automaton.load").load_base_grid(host_win_id, host_bufnr)
@@ -85,6 +101,7 @@ local function _execute_animation(animation_config)
     animation_config.init(grid)
   end
   local win_id, buffers = ui.open_window(host_win_id)
+  animation_start_time_ms = monotonic_ms()
   process_frame(grid, animation_config, win_id)
   setup_cleaning(win_id, buffers)
 end
@@ -102,13 +119,24 @@ end
 ---   if called from autocommand's callback
 ---@param event_data table?
 M.clean = function(event_data)
-  if not animation_in_progress then
+  if not animation_in_progress() then
     return
   end
-  -- TODO: More info? (name, how long did it last etc.)
-  local msg = "Animation stopped" .. (event_data and string.format(" from %s event", assert(event_data.event)) or "")
-  vim.api.nvim_echo({ { msg, "DiagnosticInfo" } }, true, {})
-  animation_in_progress = false
+
+  -- notify about animation end ...
+  local chunks = {
+    { assert(current_animation_name) .. "(", "Normal" },
+    { string.format("%.3f ms", (monotonic_ms() - assert(animation_start_time_ms)) / 1000), "DiagnosticInfo" },
+    { "): animation stopped", "Normal" },
+  }
+  if event_data then
+    chunks[#chunks + 1] = { string.format(" from %s event", assert(event_data.event)), "Comment" }
+  end
+  vim.api.nvim_echo(chunks, true, {})
+
+  -- ... and then clean things up
+  animation_start_time_ms = nil
+  current_animation_name = nil
   reset_augroup()
   ui.clean()
 end
