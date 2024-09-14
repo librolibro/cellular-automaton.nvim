@@ -3,11 +3,12 @@ local M = {}
 local ui = require("cellular-automaton.ui")
 local common = require("cellular-automaton.common")
 
----@type string?
-local current_animation_name = nil
+---@class (exact) _CA_AnimationState
+---@field current_animation_name string
+---@field animation_start_time_ms integer
 
----@type integer?
-local animation_start_time_ms = nil
+---@type _CA_AnimationState?
+local animation_state = nil
 
 ---@return integer
 local monotonic_ms = function()
@@ -17,7 +18,7 @@ end
 
 ---@return boolean
 M.animation_in_progress = function()
-  return current_animation_name ~= nil and animation_start_time_ms ~= nil
+  return animation_state ~= nil
 end
 
 ---@type integer
@@ -100,8 +101,10 @@ local function _execute_animation(animation_config)
     animation_config.init(grid)
   end
   local win_id, buffers = ui.open_window(host_win_id)
-  current_animation_name = animation_config.name
-  animation_start_time_ms = monotonic_ms()
+  animation_state = {
+    current_animation_name = animation_config.name,
+    animation_start_time_ms = monotonic_ms(),
+  }
   process_frame(grid, animation_config, win_id)
   setup_cleaning(win_id, buffers)
 end
@@ -125,9 +128,11 @@ M.clean = function(event_data)
 
   -- notify about animation end (if not in headless mode) ...
   if #vim.api.nvim_list_uis() > 0 then
+    ---@cast animation_state _CA_AnimationState
+    local elapsed_ms = monotonic_ms() - assert(animation_state.animation_start_time_ms)
     local chunks = {
-      { assert(current_animation_name) .. "(", "Normal" },
-      { string.format("%.3f ms", (monotonic_ms() - assert(animation_start_time_ms)) / 1000), "DiagnosticInfo" },
+      { assert(animation_state.current_animation_name) .. "(", "Normal" },
+      { string.format("%.3f ms", elapsed_ms / 1000), "DiagnosticInfo" },
       { "): animation stopped", "Normal" },
     }
     if event_data then
@@ -137,8 +142,7 @@ M.clean = function(event_data)
   end
 
   -- ... and then clean things up
-  animation_start_time_ms = nil
-  current_animation_name = nil
+  animation_state = nil
   reset_augroup()
   ui.clean()
 end
