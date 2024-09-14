@@ -123,16 +123,18 @@ M.clean = function(event_data)
     return
   end
 
-  -- notify about animation end ...
-  local chunks = {
-    { assert(current_animation_name) .. "(", "Normal" },
-    { string.format("%.3f ms", (monotonic_ms() - assert(animation_start_time_ms)) / 1000), "DiagnosticInfo" },
-    { "): animation stopped", "Normal" },
-  }
-  if event_data then
-    chunks[#chunks + 1] = { string.format(" [%s]", assert(event_data.event)), "Comment" }
+  -- notify about animation end (if not in headless mode) ...
+  if #vim.api.nvim_list_uis() > 0 then
+    local chunks = {
+      { assert(current_animation_name) .. "(", "Normal" },
+      { string.format("%.3f ms", (monotonic_ms() - assert(animation_start_time_ms)) / 1000), "DiagnosticInfo" },
+      { "): animation stopped", "Normal" },
+    }
+    if event_data then
+      chunks[#chunks + 1] = { string.format(" [%s]", assert(event_data.event)), "Comment" }
+    end
+    vim.api.nvim_echo(chunks, true, {})
   end
-  vim.api.nvim_echo(chunks, true, {})
 
   -- ... and then clean things up
   animation_start_time_ms = nil
