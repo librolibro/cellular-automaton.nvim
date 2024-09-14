@@ -130,7 +130,7 @@ M.clean = function(event_data)
     { "): animation stopped", "Normal" },
   }
   if event_data then
-    chunks[#chunks + 1] = { string.format(" from %s event", assert(event_data.event)), "Comment" }
+    chunks[#chunks + 1] = { string.format(" [%s]", assert(event_data.event)), "Comment" }
   end
   vim.api.nvim_echo(chunks, true, {})
 
