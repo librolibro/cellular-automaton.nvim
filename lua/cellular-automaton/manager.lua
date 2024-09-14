@@ -113,14 +113,14 @@ end
 M.execute_animation = function(animation_config)
   local ok, err = pcall(_execute_animation, animation_config)
   if not ok then
-    M.clean()
+    M.clean(false)
     error(err)
   end
 end
 
---- NOTE: *event_data* is a table with ':h event-args'
----   if called from autocommand's callback
----@param event_data table?
+--- NOTE: *event_data* is a table with ':h event-args' if called
+--- from autocommand's callback, and 'false' if error was occured
+---@param event_data table|false|nil
 M.clean = function(event_data)
   if not M.animation_in_progress() then
     return
@@ -135,7 +135,9 @@ M.clean = function(event_data)
       { string.format("%.3f ms", elapsed_ms / 1000), "DiagnosticInfo" },
       { "): animation stopped", "Normal" },
     }
-    if event_data then
+    if event_data == false then
+      chunks[#chunks + 1] = { " error occured!", "ErrorMsg" }
+    elseif event_data then
       chunks[#chunks + 1] = { string.format(" [%s]", assert(event_data.event)), "Comment" }
     end
     vim.api.nvim_echo(chunks, true, {})
