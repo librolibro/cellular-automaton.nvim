@@ -38,7 +38,7 @@ local assert_one_hl = function(cell, hl_name)
   assert.are.same(cell.hl_groups[1].name, hl_name)
 end
 
-describe("load_base_grid", function()
+describe("load_base_grid:", function()
   local window_option_cases = {
     {
       options = {
@@ -82,7 +82,7 @@ describe("load_base_grid", function()
     },
   }
 
-  describe("hl_groups", function()
+  describe("hl_groups:", function()
     local stub = require("luassert.stub")
     local get_captures_at_pos_orig = vim.treesitter.get_captures_at_pos
 
@@ -113,7 +113,7 @@ describe("load_base_grid", function()
     end)
   end)
 
-  describe("chars", function()
+  describe("chars:", function()
     it("loads grid from viewport", function()
       for idx, case in ipairs(window_option_cases) do
         local width = 20
@@ -177,7 +177,7 @@ describe("load_base_grid", function()
     end)
   end)
 
-  describe("multicell chars", function()
+  describe("multicell chars:", function()
     ---Retrieve the "char slice" from the specified grid
     ---@param grid {char: string, hl: string}[][]
     ---@param row integer
@@ -272,10 +272,10 @@ describe("load_base_grid", function()
       local grid = l.load_base_grid(0, 0)
 
       assert.same("^B", get_chars_from_grid(grid, 1, 1, 2))
-      assert.same(" ", grid[5][3].char)
+      assert.same(" ", grid[1][3].char)
 
       assert.same("<ffff>", get_chars_from_grid(grid, 2, 1, 6))
-      assert.same(" ", grid[6][7].char)
+      assert.same(" ", grid[2][7].char)
 
       local expected_hl_name = "SpecialKey"
       assert_one_hl(grid[1][1], expected_hl_name)
@@ -362,18 +362,40 @@ describe("load_base_grid", function()
 
       local ffff_symbol = "\xef\xbf\xbf"
       local ffff_symbol_width = vim.fn.strdisplaywidth(ffff_symbol, 0)
-      assert.truthy(ffff_symbol_width == 6)
+      assert.same(ffff_symbol_width, 6)
 
       -- Line content will be displayed as "<ffff>A"
       -- (+ trailing spaces to be able to shift the view)
+      local expected_content = "<ffff>A"
+      assert.same(#expected_content, ffff_symbol_width + 1)
       setup_viewport(1, width, {
-        "\xef\xbf\xbfA" .. string.rep(" ", width),
+        ffff_symbol .. "A" .. string.rep(" ", width),
       }, 0, 0, { "nonu", "nornu", "nowrap" })
 
-      local expected_content = "<ffff>A"
-      assert.are.same(#expected_content, ffff_symbol_width + 1)
+      for hscroll = 0, (#expected_content - 1) do
+        local grid = l.load_base_grid(0, 0)
+        assert.same(
+          expected_content:sub(hscroll + 1, -1),
+          get_chars_from_grid(grid, 1, 1, #expected_content - hscroll),
+          "hscroll=" .. tostring(hscroll)
+        )
+        vim.cmd("normal! zl")
+      end
+    end)
+    it("'strtrans()' for char in the middle of the string", function()
+      local width = 12
 
-      for hscroll = 0, ffff_symbol_width do
+      local ffff_symbol = "\xef\xbf\xbf"
+      local ffff_symbol_width = vim.fn.strdisplaywidth(ffff_symbol, 0)
+      assert.same(ffff_symbol_width, 6)
+
+      local expected_content = "AB<ffff>CD"
+      assert.same(#expected_content, ffff_symbol_width + 4)
+      setup_viewport(1, width, {
+        "AB" .. ffff_symbol .. "CD" .. string.rep(" ", width),
+      }, 0, 0, { "nonu", "nornu", "nowrap" })
+
+      for hscroll = 0, (#expected_content - 1) do
         local grid = l.load_base_grid(0, 0)
         assert.same(
           expected_content:sub(hscroll + 1, -1),

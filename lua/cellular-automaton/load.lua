@@ -105,6 +105,22 @@ local get_dominant_hl_group = function(buffer, cell, i, j)
   end
 end
 
+---@param translated string
+---@param expected_len integer
+---@return boolean
+local strtrans_valid = function(translated, expected_len)
+  local len = translated:len()
+  if len ~= expected_len then
+    return false
+  end
+  for i = 1, len do
+    if vim.fn.strdisplaywidth(translated:sub(i, i), 0) ~= 1 then
+      return false
+    end
+  end
+  return true
+end
+
 --- Load base grid (replace multicell
 --- symbols and tabs with replacers)
 ---@param window integer?
@@ -187,10 +203,34 @@ M.load_base_grid = function(window, buffer)
         --   of then will stay after another symbol its width will
         --   become to zero and line will become shorter
         char = " "
+        columns_occupied = #char
       end
 
       local is_tab = char == "\t"
       if is_tab or columns_occupied > 1 then
+        if not is_tab then
+          local translated_char = vim.fn.strtrans(char)
+          if strtrans_valid(translated_char, columns_occupied) then
+            -- for cindex = char_screen_col_start, char_screen_col_end do
+            for cindex = 1, columns_occupied do
+              if cindex < (first_visible_virtcol - char_screen_col_start + 1) then
+                goto to_next_strtrans_char
+              end
+              jj = jj + 1
+              if jj > window_width then
+                goto to_next_line
+              end
+              cell = grid[i][jj]
+              cell.char = translated_char:sub(cindex, cindex)
+              cell.hl_groups[#cell.hl_groups + 1] = {
+                name = "SpecialKey",
+                priority = vim.highlight.priorities.user,
+              }
+              ::to_next_strtrans_char::
+            end
+            goto to_next_char
+          end
+        end
         local replacer = is_tab and " " or "@"
         local hl_group = is_tab and "" or "WarningMsg"
         for _ = math.max(first_visible_virtcol, char_screen_col_start), char_screen_col_end do
