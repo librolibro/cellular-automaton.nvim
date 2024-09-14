@@ -67,22 +67,16 @@ end
 ---@param buffers Buffers
 local function setup_cleaning(win_id, buffers)
   local exit_keys = { "q", "Q", "<ESC>", "<CR>" }
-  for _, key in ipairs(exit_keys) do
-    for _, buffer_id in ipairs(buffers) do
-      for _, mode in ipairs({ "n", "i" }) do
-        -- TODO: use new 'vim.keymap.set' API
-        vim.api.nvim_buf_set_keymap(
-          buffer_id,
-          mode,
-          key,
-          "<Cmd>lua require('cellular-automaton.manager').clean()<CR>",
-          { silent = true }
-        )
-      end
+  for _, lhs in ipairs(exit_keys) do
+    for _, bufnr in ipairs(buffers) do
+      vim.keymap.set(
+        { "n", "i" },
+        lhs,
+        "<Cmd>lua require('cellular-automaton.manager').clean()<CR>",
+        { silent = true, buffer = bufnr }
+      )
     end
   end
-  -- NOTE(libro): VimResized with pattern (like
-  --   WinClosed lower) doesn't work (should it?)
   clean_on_events("VimResized")
   clean_on_events("WinClosed", { pattern = tostring(win_id) })
   clean_on_events("TabClosed", { pattern = tostring(vim.api.nvim_get_current_tabpage()) })
