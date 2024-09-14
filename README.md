@@ -60,15 +60,109 @@ Or just create a mapping:
 
 ```lua
 vim.keymap.set("n", "<leader>fml", "<cmd>CellularAutomaton make_it_rain<CR>")
+
+-- Same but using Lua API
+vim.keymap.set("n", "<leader>fml", function()
+  require("cellular-automaton").start_animation("make_it_rain")
+end)
 ```
 
-You can close animation window with one of: `q`/`<Esc>`/`<CR>`
+You can close animation window with one of: `q`/`Q`/`<Esc>`/`<CR>`.
+Also the animation will end if you'll close/resize animation
+window, or if you'll close/leave the tabpage.
 
-## Known issues
+### Change animation FPS
+
+## Fork goals
+
+- [x] 'strtrans()' support
+- [ ] support MORE extmarks (e.g. diagnostics)
+- [ ] more flexible **make_it_rain** configuration
+    - earlier to determine whether the cell should fall or not only
+        'most dominant' group analyzed - now when the whole extmark
+        stack is available it's more precise but still not flexible
+        in my opinion. E.g. when I'm reading a vimdoc page and calling
+        **make_it_rain** animation I want to injected languages' comments
+        to fall - or make '@markup.heading.1.vimdoc' solid and 'not fallable'
+        (but only long **=========** lines and not the headers
+        itself). Maybe create a config field like this:
+```lua
+---and also make some default implementation
+---@param should_fall: fun(CellularAutomatonCell):boolean
+```
+- [ ] support for nested animations (if they're on the same tabpage)
+- [ ] 'listchars' support?
+- [ ] wrap support
+    - it's trickier than I thought earlier...
+        'linebreak', 'showbreak', 'breakat', 'wrapmargin',
+        'display' - need to respect all of this settings
+- [ ] fold support
+- [ ] conceal support (both old-style and extmark-based)
+- [ ] ability to also fall down numbers, folds and signs?
+- [ ] better performance
+    - the more things I made in this project the bigger startuptime is
+        (I mean 'load_base_grid' execution time): more difficult virtual
+        column iteration, there's whole extmark stack for highlighting
+        (not just one highlight group) etc. It is possible
+        to make some performance improvments?
 
 - folding and wrapping is not supported ATM
 
 ## Supported animations
+
+That's how you can dynamically change animation FPS:
+
+```lua
+local map_automaton = function(lhs, automaton_name, default_fps)
+  -- Setting default FPS at the beginning
+  assert(require("cellular-automaton").animations[automaton_name]).fps = default_fps
+  vim.keymap.set(
+    "n",
+    lhs,
+    function()
+      -- Retrieving out automaton configuration
+      local ca = require("cellular-automaton")
+      local automaton = assert(ca.animations[automaton_name])
+
+      -- Some FPS boundaries (you might
+      -- set your own or skip that part)
+      local fps_min = 1; local fps_max = 50
+      local fps = vim.v.count ~= 0 and vim.v.count or assert(automaton.fps)
+
+      if fps < fps_min or fps > fps_max then
+        vim.api.nvim_echo({
+          { automaton_name, "ErrorMsg" },
+          {
+            string.format(
+              ": FPS in range [%d, %d] expected but"
+                .. " %d given (use ':h count' to change FPS)",
+              fps_min,
+              fps_max,
+              fps
+            ),
+            "Normal",
+          },
+        }, true, {})
+        return
+      end
+
+      -- Setting new FPS before animation starts
+      automaton.fps = fps
+      ca.start_animation(automaton_name)
+    end,
+    { desc = string.format('Execute "%s" automaton', automaton_name) }
+  )
+end
+
+map_automaton("<leader>fml", "make_it_rain", 25)
+```
+
+- `<leader>fml` will start animation at 25 FPS (since it's the default value),
+- Using `15<leader>fml` will start animation at 15 FPS - next
+    `<leader>fml` will also use 15 FPS since it's the
+    last value used and you didn't overwrite it.
+    - (see `:h count` or `:h [count]` for more info
+        about count before the command works)
 
 ### Make it Rain
 
