@@ -1,7 +1,13 @@
 local assert = require("luassert")
 local l = require("cellular-automaton.load")
 
-local function setup_viewport(win_height, win_width, lines, ver_scroll, hor_scroll, win_options)
+---@param h integer
+---@param w integer
+---@param lines string[]
+---@param ver_scroll integer
+---@param hor_scroll integer
+---@param win_options? string[]
+local function setup_viewport(h, w, lines, ver_scroll, hor_scroll, win_options)
   local options = win_options or {}
   -- split the windows so that the main is resizable
   vim.api.nvim_command("bufdo bwipeout!")
@@ -10,8 +16,8 @@ local function setup_viewport(win_height, win_width, lines, ver_scroll, hor_scro
   local buffnr = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(buffnr, 0, -1, false, lines)
   vim.api.nvim_win_set_buf(0, buffnr)
-  vim.api.nvim_win_set_width(0, win_width)
-  vim.api.nvim_win_set_height(0, win_height)
+  vim.api.nvim_win_set_width(0, w)
+  vim.api.nvim_win_set_height(0, h)
   if ver_scroll > 0 then
     vim.cmd(string.format([[exec "normal! %s\<C-e>"]], ver_scroll))
   end
@@ -23,6 +29,13 @@ local function setup_viewport(win_height, win_width, lines, ver_scroll, hor_scro
   for _, option in ipairs(options) do
     vim.cmd("set " .. option)
   end
+end
+
+---@param cell CellularAutomatonCell
+---@param hl_name string
+local assert_one_hl = function(cell, hl_name)
+  assert.are.equal(#cell.hl_groups, 1)
+  assert.are.same(cell.hl_groups[1].name, hl_name)
 end
 
 describe("load_base_grid", function()
@@ -81,8 +94,12 @@ describe("load_base_grid", function()
       vim.treesitter.get_captures_at_pos = get_captures_at_pos_orig
     end)
 
+    -- FIXME: Remove obsolete test
     it("gets treesitter's captures for correct position", function()
-      vim.treesitter.get_captures_at_pos.returns({})
+      vim
+        .treesitter
+        .get_captures_at_pos--[[@as table]]
+        .returns({})
       setup_viewport(
         1,
         1,
@@ -179,7 +196,7 @@ describe("load_base_grid", function()
         :map(function(col)
           return grid[row][col].char
         end)
-        :join()
+        :join("")
     end
 
     it("multi-byte but one-cell chars can entirely fit it *char* field", function()
@@ -220,12 +237,6 @@ describe("load_base_grid", function()
         "諺文",
         "한글",
         "ハン",
-        -- Single byte 0x02 occupies 2 cells
-        -- in vim and looks like "^B"
-        "\x02",
-        -- Two bytes 0xffff ("ef bf bf" in UTF-8) occupy 6 (!) cells
-        -- in vim and look like "<ffff>"
-        "\xef\xbf\xbf",
       }, 0, 0, { "nonumber", "norelativenumber" })
 
       local grid = l.load_base_grid(0, 0)
@@ -247,14 +258,31 @@ describe("load_base_grid", function()
         end
         assert.same(" ", grid[row][end_ + 1].char)
       end
+    end)
+    it("'strtrans()' support", function()
+      setup_viewport(2, 10, {
+        -- Single byte 0x02 occupies
+        -- 2 cells in vim and looks like "^B"
+        "\x02",
+        -- Two bytes 0xffff ("ef bf bf" in UTF-8) occupy
+        -- 6 (!) cells in vim and look like "<ffff>"
+        "\xef\xbf\xbf",
+      }, 0, 0, { "nonumber", "norelativenumber" })
 
-      -- "^B" -> "@@"
-      assert.same("@@", grid[5][1].char .. grid[5][2].char)
+      local grid = l.load_base_grid(0, 0)
+
+      assert.same("^B", get_chars_from_grid(grid, 1, 1, 2))
       assert.same(" ", grid[5][3].char)
 
-      -- "<ffff>" -> "@@@@@@"
-      assert.same("@@@@@@", get_chars_from_grid(grid, 6, 1, 6))
+      assert.same("<ffff>", get_chars_from_grid(grid, 2, 1, 6))
       assert.same(" ", grid[6][7].char)
+
+      local expected_hl_name = "SpecialKey"
+      assert_one_hl(grid[1][1], expected_hl_name)
+      assert_one_hl(grid[1][2], expected_hl_name)
+      for i = 1, 6 do
+        assert_one_hl(grid[2][i], expected_hl_name)
+      end
     end)
     it("tabs should be replaced (different tabstops)", function()
       local width = 19
@@ -329,12 +357,12 @@ describe("load_base_grid", function()
         )
       end
     end)
-    it("one-byte but multi-cell chars, with hscroll on them", function()
+    it("'strtrans()' converted chars, with hscroll on them", function()
       local width = 10
 
       local ffff_symbol = "\xef\xbf\xbf"
       local ffff_symbol_width = vim.fn.strdisplaywidth(ffff_symbol, 0)
-      assert.truthy(ffff_symbol_width, 6)
+      assert.truthy(ffff_symbol_width == 6)
 
       -- Line content will be displayed as "<ffff>A"
       -- (+ trailing spaces to be able to shift the view)
@@ -342,11 +370,14 @@ describe("load_base_grid", function()
         "\xef\xbf\xbfA" .. string.rep(" ", width),
       }, 0, 0, { "nonu", "nornu", "nowrap" })
 
+      local expected_content = "<ffff>A"
+      assert.are.same(#expected_content, ffff_symbol_width + 1)
+
       for hscroll = 0, ffff_symbol_width do
         local grid = l.load_base_grid(0, 0)
         assert.same(
-          string.rep("@", ffff_symbol_width - hscroll) .. "A",
-          get_chars_from_grid(grid, 1, 1, ffff_symbol_width - hscroll + 1),
+          expected_content:sub(hscroll + 1, -1),
+          get_chars_from_grid(grid, 1, 1, #expected_content - hscroll),
           "hscroll=" .. tostring(hscroll)
         )
         vim.cmd("normal! zl")
@@ -368,7 +399,7 @@ describe("load_base_grid", function()
       local grid = l.load_base_grid(0, 0)
 
       -- No horizontal offset here, ...
-      assert.same({ "@@ ", "@@@@ ", "@@@@ ", "@@@@ ", "@@ ", "@@@@@@ " }, {
+      assert.same({ "@@ ", "@@@@ ", "@@@@ ", "@@@@ ", "^B ", "<ffff> " }, {
         get_chars_from_grid(grid, 1, 1, 3),
         get_chars_from_grid(grid, 2, 1, 5),
         get_chars_from_grid(grid, 3, 1, 5),
@@ -380,7 +411,7 @@ describe("load_base_grid", function()
       -- ... now make some, ...
       vim.cmd("normal! zl")
       grid = l.load_base_grid(0, 0)
-      assert.same({ "@ ", "@@@ ", "@@@ ", "@@@ ", "@ ", "@@@@@ " }, {
+      assert.same({ "@ ", "@@@ ", "@@@ ", "@@@ ", "B ", "ffff> " }, {
         get_chars_from_grid(grid, 1, 1, 2),
         get_chars_from_grid(grid, 2, 1, 4),
         get_chars_from_grid(grid, 3, 1, 4),
@@ -392,7 +423,7 @@ describe("load_base_grid", function()
       -- ... and some more
       vim.cmd("normal! zl")
       grid = l.load_base_grid(0, 0)
-      assert.same({ "  ", "@@  ", "@@  ", "@@  ", "  ", "@@@@  " }, {
+      assert.same({ "  ", "@@  ", "@@  ", "@@  ", "  ", "fff>  " }, {
         get_chars_from_grid(grid, 1, 1, 2),
         get_chars_from_grid(grid, 2, 1, 4),
         get_chars_from_grid(grid, 3, 1, 4),
