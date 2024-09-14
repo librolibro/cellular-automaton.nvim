@@ -13,19 +13,25 @@ local function setup_viewport(h, w, lines, ver_scroll, hor_scroll, win_options)
   vim.api.nvim_command("bufdo bwipeout!")
   vim.api.nvim_command("vsplit")
   vim.api.nvim_command("split")
-  local buffnr = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_lines(buffnr, 0, -1, false, lines)
-  vim.api.nvim_win_set_buf(0, buffnr)
-  vim.api.nvim_win_set_width(0, w)
-  vim.api.nvim_win_set_height(0, h)
+  local winid = 0
+  local bufnr = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+  vim.api.nvim_win_set_buf(winid, bufnr)
+  vim.api.nvim_win_set_width(winid, w)
+  vim.api.nvim_win_set_height(winid, h)
   if ver_scroll > 0 then
     vim.cmd(string.format([[exec "normal! %s\<C-e>"]], ver_scroll))
   end
   -- set nowrap - otherwise horizontall scrolling doesnt work
-  vim.opt.wrap = false
+  vim.wo[winid].wrap = false
   if hor_scroll > 0 then
     vim.cmd(string.format([[exec "normal! %szl"]], hor_scroll))
   end
+  -- some of them may be overridden by win_options
+  vim.wo[winid].number = false
+  vim.wo[winid].relativenumber = false
+  vim.wo[winid].signcolumn = "yes"
+  vim.wo[winid].foldcolumn = "0"
   for _, option in ipairs(options) do
     vim.cmd("set " .. option)
   end
@@ -82,37 +88,6 @@ describe("load_base_grid:", function()
     },
   }
 
-  describe("hl_groups:", function()
-    local stub = require("luassert.stub")
-    local get_captures_at_pos_orig = vim.treesitter.get_captures_at_pos
-
-    before_each(function()
-      vim.treesitter.get_captures_at_pos = stub()
-    end)
-
-    after_each(function()
-      vim.treesitter.get_captures_at_pos = get_captures_at_pos_orig
-    end)
-
-    -- FIXME: Remove obsolete test
-    it("gets treesitter's captures for correct position", function()
-      vim
-        .treesitter
-        .get_captures_at_pos--[[@as table]]
-        .returns({})
-      setup_viewport(
-        1,
-        1,
-        { "123", "456", "abc" },
-        2,
-        2,
-        { "nonumber", "norelativenumber", "signcolumn=no", "noshowmode", "noshowcmd" }
-      )
-      l.load_base_grid(0, 0)
-      assert.stub(vim.treesitter.get_captures_at_pos).was_called_with(vim.api.nvim_get_current_buf(), 2, 2)
-    end)
-  end)
-
   describe("chars:", function()
     it("loads grid from viewport", function()
       for idx, case in ipairs(window_option_cases) do
@@ -127,7 +102,7 @@ describe("load_base_grid:", function()
       end
     end)
 
-    it("loads grid when buffer content is wider than viewport ", function()
+    it("loads grid when buffer content is wider than viewport", function()
       for idx, case in ipairs(window_option_cases) do
         local width = 10
         local height = 20
@@ -139,7 +114,7 @@ describe("load_base_grid:", function()
       end
     end)
 
-    it("loads grid when buffer content is longer than viewport ", function()
+    it("loads grid when buffer content is longer than viewport", function()
       for idx, case in ipairs(window_option_cases) do
         local width = 10
         local height = 3
@@ -179,7 +154,7 @@ describe("load_base_grid:", function()
 
   describe("multicell chars:", function()
     ---Retrieve the "char slice" from the specified grid
-    ---@param grid {char: string, hl: string}[][]
+    ---@param grid CellularAutomatonGrid
     ---@param row integer
     ---@param col_start integer?
     ---@param col_end integer?
@@ -206,14 +181,7 @@ describe("load_base_grid:", function()
       -- cell but contains of several bytes,
       -- also some math symbols, dyacritics etc.
       -- NOTE: Lines 1 and 2 are equal
-      setup_viewport(
-        height,
-        width,
-        { "\xce\xa9\xc3\x85", "ΩÅ", "ｶ¼аꜳ" },
-        0,
-        0,
-        { "nonumber", "norelativenumber" }
-      )
+      setup_viewport(height, width, { "\xce\xa9\xc3\x85", "ΩÅ", "ｶ¼аꜳ" }, 0, 0)
       local grid = l.load_base_grid(0, 0)
 
       assert.same("Ω", grid[1][1].char)
@@ -227,17 +195,12 @@ describe("load_base_grid:", function()
       assert.same("а", grid[3][3].char)
       assert.same("ꜳ", grid[3][4].char)
     end)
-    it("one-byte (or multi-byte) and multicell chars should be replaced", function()
+    it("one-/multi-byte and multicell chars should be replaced", function()
       local width = 10
       local height = 10
 
       -- Emojis, chinese/korean/japanese hyeroglyphs and lot more ...
-      setup_viewport(height, width, {
-        "💤",
-        "諺文",
-        "한글",
-        "ハン",
-      }, 0, 0, { "nonumber", "norelativenumber" })
+      setup_viewport(height, width, { "💤", "諺文", "한글", "ハン" }, 0, 0)
 
       local grid = l.load_base_grid(0, 0)
 
@@ -254,7 +217,8 @@ describe("load_base_grid:", function()
         for col = 1, end_ do
           -- Two chinese, two korean, two japanese
           -- hyeroglyphs ... Now they all are "@@@@"
-          assert.same("@", grid[row][col].char, string.format("row %d, byte col %d", row, col))
+          local desc = string.format("row %d, byte col %d", row, col)
+          assert.same("@", grid[row][col].char, desc)
         end
         assert.same(" ", grid[row][end_ + 1].char)
       end
@@ -267,7 +231,7 @@ describe("load_base_grid:", function()
         -- Two bytes 0xffff ("ef bf bf" in UTF-8) occupy
         -- 6 (!) cells in vim and look like "<ffff>"
         "\xef\xbf\xbf",
-      }, 0, 0, { "nonumber", "norelativenumber" })
+      }, 0, 0)
 
       local grid = l.load_base_grid(0, 0)
 
@@ -333,12 +297,9 @@ describe("load_base_grid:", function()
       -- NOTE: make the line at least twice longer than
       --   the buffer width to apply hscrolls later
       local ts_opt = "ts=" .. tostring(ts)
-      setup_viewport(1, width, { "\tA" .. string.rep(" ", width) }, 0, 0, {
-        ts_opt,
-        "nowrap",
-        "nonumber",
-        "nornu",
-      })
+      setup_viewport(1, width, {
+        "\tA" .. string.rep(" ", width),
+      }, 0, 0, { ts_opt })
 
       -- Jump to the right to skip all tab cells + "A" letter, ...
       vim.cmd(string.format([[normal! %dzl]], ts + 1))
@@ -370,7 +331,7 @@ describe("load_base_grid:", function()
       assert.same(#expected_content, ffff_symbol_width + 1)
       setup_viewport(1, width, {
         ffff_symbol .. "A" .. string.rep(" ", width),
-      }, 0, 0, { "nonu", "nornu", "nowrap" })
+      }, 0, 0)
 
       for hscroll = 0, (#expected_content - 1) do
         local grid = l.load_base_grid(0, 0)
@@ -393,7 +354,7 @@ describe("load_base_grid:", function()
       assert.same(#expected_content, ffff_symbol_width + 4)
       setup_viewport(1, width, {
         "AB" .. ffff_symbol .. "CD" .. string.rep(" ", width),
-      }, 0, 0, { "nonu", "nornu", "nowrap" })
+      }, 0, 0)
 
       for hscroll = 0, (#expected_content - 1) do
         local grid = l.load_base_grid(0, 0)
@@ -416,7 +377,7 @@ describe("load_base_grid:", function()
         "ハン",
         "\x02",
         "\xef\xbf\xbf",
-      }, 0, 0, { "nonu", "nornu", "nowrap" })
+      }, 0, 0)
 
       local grid = l.load_base_grid(0, 0)
 
@@ -471,7 +432,7 @@ describe("load_base_grid:", function()
         vs16 .. some_stuff,
         "🤣" .. vs16 .. "AA",
         "A" .. vs15 .. "AA",
-      }, 0, 0, { "nonu", "nornu", "nowrap" })
+      }, 0, 0)
 
       local grid = l.load_base_grid(0, 0)
 

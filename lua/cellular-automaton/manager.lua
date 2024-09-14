@@ -16,7 +16,7 @@ local monotonic_ms = function()
 end
 
 ---@return boolean
-local animation_in_progress = function()
+M.animation_in_progress = function()
   return current_animation_name ~= nil and animation_start_time_ms ~= nil
 end
 
@@ -90,10 +90,9 @@ end
 
 ---@param animation_config CellularAutomatonConfig
 local function _execute_animation(animation_config)
-  if animation_in_progress() then
+  if M.animation_in_progress() then
     error("Nested animations are forbidden")
   end
-  current_animation_name = assert(animation_config.name)
   local host_win_id = vim.api.nvim_get_current_win()
   local host_bufnr = vim.api.nvim_get_current_buf()
   local grid = require("cellular-automaton.load").load_base_grid(host_win_id, host_bufnr)
@@ -101,6 +100,7 @@ local function _execute_animation(animation_config)
     animation_config.init(grid)
   end
   local win_id, buffers = ui.open_window(host_win_id)
+  current_animation_name = animation_config.name
   animation_start_time_ms = monotonic_ms()
   process_frame(grid, animation_config, win_id)
   setup_cleaning(win_id, buffers)
@@ -119,7 +119,7 @@ end
 ---   if called from autocommand's callback
 ---@param event_data table?
 M.clean = function(event_data)
-  if not animation_in_progress() then
+  if not M.animation_in_progress() then
     return
   end
 
