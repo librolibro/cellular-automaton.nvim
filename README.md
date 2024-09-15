@@ -75,6 +75,17 @@ window, or if you'll close/leave the tabpage.
 
 ## Fork goals
 
+- [x] Proper UTF-8 and tab support
+- [x] Using 'vim.inspect_pos()' for better and more accurate
+    highlighting (support for old-style and extmark-based
+    highlighting including LSP semantic tokens and any
+    other custom extmark, e.g. the ones
+    nvim-colorizer applies)
+- [x] 'getwininfo()' usage
+    - [x] get rid of monstrous VimL function - just use 'textoff' field
+    - [x] reproduce 'textoff' for created window
+- [x] support splits (create window on top of the host window
+    at the same place, relative to it but not to the editor)
 - [x] 'strtrans()' support
 - [ ] support MORE extmarks (e.g. diagnostics)
 - [ ] more flexible **make_it_rain** configuration
