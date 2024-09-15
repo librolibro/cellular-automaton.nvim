@@ -5,38 +5,38 @@ local M = {}
 ---@type table<string, CellularAutomatonConfig>
 M.animations = {}
 
----@param config CellularAutomatonConfig
-M.register_animation = function(config)
-  vim.validate("config", config, "table")
-  vim.validate("config.fps", config.fps, "number")
-  vim.validate("config.name", config.name, "string")
-  vim.validate("config.init", config.init, "function", true)
-  vim.validate("config.update", config.update, "function")
+---@param cfg CellularAutomatonConfig
+M.register_animation = function(cfg)
+  vim.validate("config", cfg, "table")
+  vim.validate("config.fps", cfg.fps, "number")
+  vim.validate("config.name", cfg.name, "string")
+  vim.validate("config.init", cfg.init, "function", true)
+  vim.validate("config.update", cfg.update, "function")
 
-  M.animations[config.name] = config
+  M.animations[cfg.name] = cfg
 end
 
 ---@param name string
 local register_builtin_animation = function(name)
-  local config = assert(require(string.format("cellular-automaton.animations.%s", name)))
-  if not config.name or config.name == "" then
-    config.name = name
+  local cfg = assert(require(string.format("cellular-automaton.animations.%s", name)))
+  if not cfg.name or cfg.name == "" then
+    cfg.name = name
   end
-  M.register_animation(config)
+  M.register_animation(cfg)
 end
 
 register_builtin_animation("make_it_rain")
 register_builtin_animation("game_of_life")
 register_builtin_animation("scramble")
 
----@param animation_name string
-M.start_animation = function(animation_name)
+---@param name string
+M.start_animation = function(name)
   -- Make sure animaiton exists
-  if M.animations[animation_name] == nil then
-    error("Error while starting an animation. Unknown cellular-automaton animation: " .. animation_name)
+  if M.animations[name] == nil then
+    error("Error while starting an animation. Unknown cellular-automaton animation: " .. name)
   end
 
-  manager.execute_animation(M.animations[animation_name])
+  manager.execute_animation(M.animations[name])
 end
 
 return M

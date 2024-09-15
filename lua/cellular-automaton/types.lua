@@ -1,4 +1,4 @@
----@alias Buffers [integer, integer]
+---@alias _CA_Buffers [integer, integer]
 
 --- Highlight group parameters (needed for
 --- proper 'nvim_buf_set_extmark()' call)

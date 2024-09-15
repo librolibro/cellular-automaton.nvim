@@ -117,8 +117,6 @@ window, or if you'll close/leave the tabpage.
         (not just one highlight group) etc. It is possible
         to make some performance improvments?
 
-- folding and wrapping is not supported ATM
-
 ## Supported animations
 
 That's how you can dynamically change animation FPS:

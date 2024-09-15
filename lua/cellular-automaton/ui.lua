@@ -1,60 +1,13 @@
 local M = {}
 
--- NOTE: When nested animations will
---   be supported make a table of these
-
---- Number of floating window for animation (if present)
----
----@type integer?
-local window_id = nil
-
----@type Buffers?
-local buffers = nil
-
-local namespace = vim.api.nvim_create_namespace("cellular-automaton")
-
--- Each frame is rendered in different buffer to avoid flickering
--- caused by lack of higliths right after setting the buffer data.
--- Thus we are switching between two buffers throughtout the animation
----@type fun():integer
-local get_buffer = (function()
-  local count = 0
-  return function()
-    count = count + 1
-    return buffers--[[@as Buffers]][count % 2 + 1]
-  end
-end)()
-
---- Create new floating window and
---- buffers for cellular automaton
----@param host_window integer?
----@return integer
----@return Buffers
-M.open_window = function(host_window)
-  if host_window == nil or host_window == 0 then
-    host_window = vim.api.nvim_get_current_win()
-  end
-
-  buffers = {
-    vim.api.nvim_create_buf(false, true),
-    vim.api.nvim_create_buf(false, true),
-  }
-  local buffnr = get_buffer()
-  local wininfo = vim.fn.getwininfo(host_window)[1]
-  window_id = vim.api.nvim_open_win(buffnr, true, {
-    relative = "win",
-    width = wininfo.width,
-    height = wininfo.height,
-    border = "none",
-    row = 0,
-    col = 0,
-  })
-
-  vim.wo[window_id].relativenumber = false
+---@param winid integer
+---@param wininfo vim.fn.getwininfo.ret.item
+local configure_window = function(winid, wininfo)
+  vim.wo[winid].relativenumber = false
   if wininfo.textoff == 0 then
-    vim.wo[window_id].number = false
-    vim.wo[window_id].signcolumn = "no"
-    vim.wo[window_id].foldcolumn = "0"
+    vim.wo[winid].number = false
+    vim.wo[winid].signcolumn = "no"
+    vim.wo[winid].foldcolumn = "0"
   else
     -- Reproducing host_window's textoff
     -- using big fixed 'nuw', 'scl' and 'fdc'
@@ -72,11 +25,11 @@ M.open_window = function(host_window)
       elseif textoff_left >= calc_nuw then
         nuw = textoff_left
       else
-        vim.wo[window_id].number = false
+        vim.wo[winid].number = false
       end
       if nuw then
-        vim.wo[window_id].number = true
-        vim.wo[window_id].numberwidth = nuw
+        vim.wo[winid].number = true
+        vim.wo[winid].numberwidth = nuw
         textoff_left = textoff_left - nuw
       end
     end
@@ -86,13 +39,13 @@ M.open_window = function(host_window)
       if math.fmod(scl_width, 2) == 1 then
         scl_width = scl_width - 1
       end
-      vim.wo[window_id].signcolumn = string.format("yes:%d", scl_width / 2)
+      vim.wo[winid].signcolumn = string.format("yes:%d", scl_width / 2)
       textoff_left = textoff_left - scl_width
     end
 
     if textoff_left > 0 then
       local fdc_width = math.min(textoff_left, 9)
-      vim.wo[window_id].foldcolumn = tostring(fdc_width)
+      vim.wo[winid].foldcolumn = tostring(fdc_width)
       textoff_left = textoff_left - fdc_width
     end
 
@@ -101,18 +54,50 @@ M.open_window = function(host_window)
     end
   end
 
-  vim.wo[window_id].winhl = "Normal:CellularAutomatonNormal"
-  vim.wo[window_id].list = false
-  return window_id, buffers
+  vim.wo[winid].winhl = "Normal:CellularAutomatonNormal"
+  vim.wo[winid].list = false
+end
+
+--- Create new floating window and
+--- buffers for cellular automaton
+---@param host_window integer?
+---@return integer
+---@return integer[]
+M.prepare_window_and_buffers = function(host_window)
+  if host_window == nil or host_window == 0 then
+    host_window = vim.api.nvim_get_current_win()
+  end
+
+  local buffers = {
+    vim.api.nvim_create_buf(false, true),
+    vim.api.nvim_create_buf(false, true),
+  }
+  local wininfo = vim.fn.getwininfo(host_window)[1]
+  local winid = vim.api.nvim_open_win(buffers[1], true, {
+    relative = "win",
+    width = wininfo.width,
+    height = wininfo.height,
+    border = "none",
+    row = 0,
+    col = 0,
+  })
+
+  local ok, err = pcall(configure_window, winid, wininfo)
+  if not ok then
+    M.clean(winid, buffers)
+    error(err)
+  end
+  return winid, buffers
 end
 
 ---@param grid CellularAutomatonGrid
-M.render_frame = function(grid)
+---@param ctx CellularAutomatonContext
+M.render_frame = function(grid, ctx)
   -- quit if animation already interrupted
-  if window_id == nil or not vim.api.nvim_win_is_valid(window_id) then
+  if ctx.interrupted or not vim.api.nvim_win_is_valid(ctx.winid) then
     return
   end
-  local buffnr = get_buffer()
+  local bufnr = ctx.next_bufnr()
   -- update data
   local lines = {}
   for _, row in ipairs(grid) do
@@ -122,16 +107,16 @@ M.render_frame = function(grid)
     end
     table.insert(lines, table.concat(chars, ""))
   end
-  vim.api.nvim_buf_set_lines(buffnr, 0, vim.api.nvim_win_get_height(window_id), false, lines)
+  vim.api.nvim_buf_set_lines(bufnr, 0, vim.api.nvim_win_get_height(ctx.winid), false, lines)
   -- update highlights
-  vim.api.nvim_buf_clear_namespace(buffnr, namespace, 0, -1)
+  vim.api.nvim_buf_clear_namespace(bufnr, ctx.hl_ns_id, 0, -1)
   for i, row in ipairs(grid) do
     local offset = 0
     for j, cell in ipairs(row) do
       local char_len = string.len(cell.char)
       local col_start = j - 1 + offset
       for _, hl_group in ipairs(cell.hl_groups) do
-        vim.api.nvim_buf_set_extmark(buffnr, namespace, i - 1, col_start, {
+        vim.api.nvim_buf_set_extmark(bufnr, ctx.hl_ns_id, i - 1, col_start, {
           end_row = i - 1,
           end_col = col_start + char_len,
           priority = hl_group.priority,
@@ -146,19 +131,20 @@ M.render_frame = function(grid)
     end
   end
   -- swap buffers
-  vim.api.nvim_win_set_buf(window_id, buffnr)
+  vim.api.nvim_win_set_buf(ctx.winid, bufnr)
 end
 
-M.clean = function()
-  if buffers then
-    for _, buffnr in ipairs(buffers) do
-      if vim.api.nvim_buf_is_valid(buffnr) then
-        vim.api.nvim_buf_delete(buffnr, { force = true })
-      end
+---@param winid integer
+---@param buffers integer[]
+M.clean = function(winid, buffers)
+  for _, buffnr in ipairs(buffers) do
+    if vim.api.nvim_buf_is_valid(buffnr) then
+      vim.api.nvim_buf_delete(buffnr, { force = true })
     end
-    buffers = nil
   end
-  window_id = nil
+  if vim.api.nvim_win_is_valid(winid) then
+    vim.api.nvim_win_close(winid, true)
+  end
 end
 
 return M
