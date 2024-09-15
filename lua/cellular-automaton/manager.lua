@@ -4,7 +4,8 @@ local ui = require("cellular-automaton.ui")
 local common = require("cellular-automaton.common")
 local animation_context_class = require("cellular-automaton.context")
 
-local animation_in_progress = false
+---@type table<integer, CellularAutomatonContext>
+M._running_animations = {}
 
 --- Processing another frame
 ---@param grid CellularAutomatonGrid
@@ -84,16 +85,23 @@ end
 
 ---@param cfg CellularAutomatonConfig
 M.execute_animation = function(cfg)
-  if animation_in_progress then
-    error("Nested animations are forbidden")
-  end
   -- TODO: be able to run not only current buffer/window
   local host_winid = vim.api.nvim_get_current_win()
   local host_bufnr = vim.api.nvim_get_current_buf()
+  if M._running_animations[host_winid] and not M._running_animations[host_winid].interrupted then
+    error("There is already running animation for winid=" .. tostring(host_winid))
+  end
+  for k, ctx in pairs(M._running_animations) do
+    if ctx.interrupted then
+      M._running_animations[k] = nil
+    elseif ctx.winid == host_winid then
+      error(string.format("You want to run an animation for winid=%d which is already an animation window", host_winid))
+    end
+  end
   local winid, buffers = ui.prepare_window_and_buffers(host_winid)
   -- creating animation context
-  local ctx = animation_context_class.new(cfg.name, winid, buffers)
-  animation_in_progress = true
+  local ctx = animation_context_class.new(cfg.name, host_winid, winid, buffers)
+  M._running_animations[host_winid] = ctx
   local ok, err = pcall(_execute_animation, cfg, host_winid, host_bufnr, ctx)
   if not ok then
     M.clean(ctx, false)
@@ -106,10 +114,9 @@ end
 ---@param ctx CellularAutomatonContext
 ---@param event_data table|false|nil
 M.clean = function(ctx, event_data)
-  if not animation_in_progress then
+  if ctx.interrupted then
     return
   end
-  animation_in_progress = false
   ctx.interrupted = true
 
   -- notify about animation end (if not in headless mode) ...

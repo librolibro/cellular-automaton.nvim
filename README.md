@@ -155,7 +155,8 @@ map_automaton("<leader>fml", "make_it_rain", 25)
 ---and also make some default implementation
 ---@param should_fall: fun(CellularAutomatonCell):boolean
 ```
-- [ ] support for nested animations (if they're on the same tabpage)
+- [x] support for nested animations (if they're on the same tabpage)
+    - didn't test it properly
 - [ ] `listchars` support?
 - [ ] wrap support
     - it's trickier than I thought earlier...

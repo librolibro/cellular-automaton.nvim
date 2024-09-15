@@ -16,7 +16,10 @@ end
 
 describe("integration", function()
   before_each(function()
-    require("cellular-automaton.manager").clean()
+    local m = require("cellular-automaton.manager")
+    for _, ctx in pairs(m._running_animations) do
+      m.clean(ctx)
+    end
   end)
 
   it("unhandled error doesn't break next animations", function()

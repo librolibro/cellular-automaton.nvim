@@ -15,6 +15,9 @@ local time = require("cellular-automaton.common").time
 --- (see *monotonic_ms* function)
 ---@field private started_ms integer
 ---
+--- Host window ID
+---@field host_winid integer
+---
 --- Floating window ID used for animation
 ---@field winid integer
 ---
@@ -41,10 +44,11 @@ setmetatable(ctx, {
 })
 
 ---@param name string
+---@param host_winid integer
 ---@param winid integer
 ---@param buffers integer[]
 ---@return CellularAutomatonContext
-function ctx.new(name, winid, buffers)
+function ctx.new(name, host_winid, winid, buffers)
   vim.validate({
     name = { name, "string" },
     winid = { winid, "number" },
@@ -53,8 +57,10 @@ function ctx.new(name, winid, buffers)
   assert(#buffers > 0, "No buffers specified")
 
   local self = setmetatable({}, ctx)
-  self.started_ms = time()
   self.interrupted = false
+  self.started_ms = time()
+
+  self.host_winid = host_winid
   self.buffers = buffers
   self.winid = winid
   self.name = name
