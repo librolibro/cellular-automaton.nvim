@@ -252,9 +252,7 @@ M.load_base_grid = function(window, buffer)
         end
         cell = grid[i][jj]
         cell.char = char
-        if char ~= " " then
-          get_dominant_hl_group(buffer, cell, lineno, virtcol)
-        end
+        get_dominant_hl_group(buffer, cell, lineno, virtcol)
       end
       ::to_next_char::
     end
