@@ -1,5 +1,11 @@
 local M = {}
 
+---@param winid integer
+---@return boolean
+M.is_floating = function(winid)
+  return vim.api.nvim_win_get_config(winid).relative ~= ""
+end
+
 --- Get milisecs from some
 --- arbitray point in time
 ---@return number
