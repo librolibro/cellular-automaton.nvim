@@ -20,12 +20,35 @@ local cell_hl_matches = function(cell, ...)
   return false
 end
 
+---@param cell CellularAutomatonCell
+local init_empty = function(cell)
+  if cell.char ~= " " then
+    cell.empty = false
+    return
+  end
+  for _, hl_group in ipairs(cell.hl_groups) do
+    local hl_id = vim.fn.synIDtrans(vim.fn.hlID(hl_group.name))
+    if
+      vim.fn.synIDattr(hl_id, "bg") ~= ""
+      or vim.fn.synIDattr(hl_id, "underline") == "1"
+      or vim.fn.synIDattr(hl_id, "undercurl") == "1"
+      or vim.fn.synIDattr(hl_id, "underdouble") == "1"
+      or vim.fn.synIDattr(hl_id, "underdotted") == "1"
+      or vim.fn.synIDattr(hl_id, "underdashed") == "1"
+    then
+      cell.empty = false
+      return
+    end
+  end
+  cell.empty = true
+end
+
 ---@param grid CellularAutomatonGrid
 ---@param x integer
 ---@param y integer
 ---@return boolean
 local cell_empty = function(grid, x, y)
-  return x > 0 and x <= #grid and y > 0 and y <= #grid[x] and grid[x][y].char == " "
+  return x > 0 and x <= #grid and y > 0 and y <= #grid[x] and grid[x][y].empty
 end
 
 ---@param grid CellularAutomatonGrid
@@ -42,7 +65,8 @@ M.init = function(grid)
   for i = 1, #grid do
     for j = 1, #grid[i] do
       local cell = grid[i][j]
-      cell.should_not_fall = cell.char == " " or cell_hl_matches(cell, "[cC]omment")
+      init_empty(cell)
+      cell.should_not_fall = cell.empty or cell_hl_matches(cell, "[cC]omment")
     end
   end
 end
@@ -70,7 +94,7 @@ M.update = function(grid)
       end
       local cell = grid[x0][y0]
 
-      -- skip spaces and comments or already proccessed cells
+      -- skip comments or already proccessed cells
       if cell.should_not_fall or cell.processed == true then
         goto continue
       end

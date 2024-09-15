@@ -72,6 +72,11 @@ M.prepare_window_and_buffers = function(host_winid)
     vim.api.nvim_create_buf(false, true),
     vim.api.nvim_create_buf(false, true),
   }
+  -- make it always on top of the host window (when it's floating)
+  local zindex = vim.api.nvim_win_get_config(host_winid).zindex
+  if zindex ~= nil then
+    zindex = zindex + 1
+  end
   local wininfo = vim.fn.getwininfo(host_winid)[1]
   local winid = vim.api.nvim_open_win(buffers[1], true, {
     relative = "win",
@@ -81,6 +86,7 @@ M.prepare_window_and_buffers = function(host_winid)
     border = "none",
     row = 0,
     col = 0,
+    zindex = zindex,
   })
 
   local ok, err = pcall(configure_window, winid, wininfo)
