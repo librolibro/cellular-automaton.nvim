@@ -64,7 +64,16 @@ vim.keymap.set("n", "<leader>fml", "<cmd>CellularAutomaton make_it_rain<CR>")
 -- Same but using Lua API
 vim.keymap.set("n", "<leader>fml", function()
   require("cellular-automaton").start_animation("make_it_rain")
+  -- Or this:
+  -- require("cellular-automaton").start_animation("make_it_rain", 0)
 end)
+```
+
+To start the animation for not current buffer:
+
+```lua
+-- winid is the 'window-ID' of the window you want animation to start in
+require("cellular-automaton").start_animation("make_it_rain", winid)
 ```
 
 You can close animation window with one of: `q`/`Q`/`<Esc>`/`<CR>`.
@@ -156,7 +165,8 @@ map_automaton("<leader>fml", "make_it_rain", 25)
 ---@param should_fall: fun(CellularAutomatonCell):boolean
 ```
 - [x] support for nested animations (if they're on the same tabpage)
-    - didn't test it properly
+    - didn't test it properly but looks like it's working
+- [x] ability to start animation for not current window
 - [ ] `listchars` support?
 - [ ] wrap support
     - it's trickier than I thought earlier...

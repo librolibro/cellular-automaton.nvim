@@ -84,10 +84,18 @@ local function _execute_animation(cfg, host_winid, host_bufnr, ctx)
 end
 
 ---@param cfg CellularAutomatonConfig
-M.execute_animation = function(cfg)
-  -- TODO: be able to run not only current buffer/window
-  local host_winid = vim.api.nvim_get_current_win()
-  local host_bufnr = vim.api.nvim_get_current_buf()
+---@param host_winid integer
+M.execute_animation = function(cfg, host_winid)
+  local host_winid_visible = false
+  for _, tabpage_winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if tabpage_winid == host_winid then
+      host_winid_visible = true
+      break
+    end
+  end
+  if not host_winid_visible then
+    error(string.format("winid=%d is not on the current tabpage", host_winid))
+  end
   if M._running_animations[host_winid] and not M._running_animations[host_winid].interrupted then
     error("There is already running animation for winid=" .. tostring(host_winid))
   end
@@ -98,6 +106,7 @@ M.execute_animation = function(cfg)
       error(string.format("You want to run an animation for winid=%d which is already an animation window", host_winid))
     end
   end
+  local host_bufnr = vim.api.nvim_win_get_buf(host_winid)
   local winid, buffers = ui.prepare_window_and_buffers(host_winid)
   -- creating animation context
   local ctx = animation_context_class.new(cfg.name, host_winid, winid, buffers)

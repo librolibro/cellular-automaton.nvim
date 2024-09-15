@@ -30,13 +30,20 @@ register_builtin_animation("game_of_life")
 register_builtin_animation("scramble")
 
 ---@param name string
-M.start_animation = function(name)
+---@param winid? integer
+M.start_animation = function(name, winid)
   -- Make sure animaiton exists
   if M.animations[name] == nil then
     error("Error while starting an animation. Unknown cellular-automaton animation: " .. name)
   end
 
-  manager.execute_animation(M.animations[name])
+  if winid == nil or winid == 0 then
+    winid = vim.api.nvim_get_current_win()
+  elseif not vim.api.nvim_win_is_valid(winid) then
+    error("Invalid winid=" .. tostring(winid))
+  end
+
+  manager.execute_animation(M.animations[name], winid)
 end
 
 return M

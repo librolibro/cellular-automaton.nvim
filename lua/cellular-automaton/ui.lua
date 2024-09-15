@@ -60,21 +60,22 @@ end
 
 --- Create new floating window and
 --- buffers for cellular automaton
----@param host_window integer?
+---@param host_winid integer?
 ---@return integer
 ---@return integer[]
-M.prepare_window_and_buffers = function(host_window)
-  if host_window == nil or host_window == 0 then
-    host_window = vim.api.nvim_get_current_win()
+M.prepare_window_and_buffers = function(host_winid)
+  if host_winid == nil or host_winid == 0 then
+    host_winid = vim.api.nvim_get_current_win()
   end
 
   local buffers = {
     vim.api.nvim_create_buf(false, true),
     vim.api.nvim_create_buf(false, true),
   }
-  local wininfo = vim.fn.getwininfo(host_window)[1]
+  local wininfo = vim.fn.getwininfo(host_winid)[1]
   local winid = vim.api.nvim_open_win(buffers[1], true, {
     relative = "win",
+    win = host_winid,
     width = wininfo.width,
     height = wininfo.height,
     border = "none",
