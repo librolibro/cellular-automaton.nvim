@@ -73,52 +73,6 @@ window, or if you'll close/leave the tabpage.
 
 ### Change animation FPS
 
-## Fork goals
-
-- [x] Proper UTF-8 and tab support
-- [x] Using 'vim.inspect_pos()' for better and more accurate
-    highlighting (support for old-style and extmark-based
-    highlighting including LSP semantic tokens and any
-    other custom extmark, e.g. the ones
-    nvim-colorizer applies)
-- [x] 'getwininfo()' usage
-    - [x] get rid of monstrous VimL function - just use 'textoff' field
-    - [x] reproduce 'textoff' for created window
-- [x] support splits (create window on top of the host window
-    at the same place, relative to it but not to the editor)
-- [x] 'strtrans()' support
-- [ ] support MORE extmarks (e.g. diagnostics)
-- [ ] more flexible **make_it_rain** configuration
-    - earlier to determine whether the cell should fall or not only
-        'most dominant' group analyzed - now when the whole extmark
-        stack is available it's more precise but still not flexible
-        in my opinion. E.g. when I'm reading a vimdoc page and calling
-        **make_it_rain** animation I want to injected languages' comments
-        to fall - or make '@markup.heading.1.vimdoc' solid and 'not fallable'
-        (but only long **=========** lines and not the headers
-        itself). Maybe create a config field like this:
-```lua
----and also make some default implementation
----@param should_fall: fun(CellularAutomatonCell):boolean
-```
-- [ ] support for nested animations (if they're on the same tabpage)
-- [ ] 'listchars' support?
-- [ ] wrap support
-    - it's trickier than I thought earlier...
-        'linebreak', 'showbreak', 'breakat', 'wrapmargin',
-        'display' - need to respect all of this settings
-- [ ] fold support
-- [ ] conceal support (both old-style and extmark-based)
-- [ ] ability to also fall down numbers, folds and signs?
-- [ ] better performance
-    - the more things I made in this project the bigger startuptime is
-        (I mean 'load_base_grid' execution time): more difficult virtual
-        column iteration, there's whole extmark stack for highlighting
-        (not just one highlight group) etc. It is possible
-        to make some performance improvments?
-
-## Supported animations
-
 That's how you can dynamically change animation FPS:
 
 ```lua
@@ -172,6 +126,52 @@ map_automaton("<leader>fml", "make_it_rain", 25)
     last value used and you didn't overwrite it.
     - (see `:h count` or `:h [count]` for more info
         about count before the command works)
+
+## Fork goals
+
+- [x] Proper UTF-8 and tab support
+- [x] Using `vim.inspect_pos()` for better and more accurate
+    highlighting (support for old-style and extmark-based
+    highlighting including LSP semantic tokens and any
+    other custom extmark, e.g. the ones
+    nvim-colorizer applies)
+- [x] `getwininfo()` usage
+    - [x] get rid of monstrous VimL function - just use *textoff* field
+    - [x] reproduce *textoff* for created window
+- [x] support splits (create window on top of the host window
+    at the same place, relative to it but not to the editor)
+- [x] `strtrans()` support
+- [ ] support MORE extmarks (e.g. diagnostics)
+- [ ] more flexible **make_it_rain** configuration
+    - earlier to determine whether the cell should fall or not only
+        *most dominant* group analyzed - now when the whole extmark
+        stack is available it's more precise but still not flexible
+        in my opinion. E.g. when I'm reading a vimdoc page and calling
+        **make_it_rain** animation I want to injected languages' comments
+        to fall - or make **@markup.heading.1.vimdoc** solid and 'not
+        fallable' (but only long **=========** lines and not the headers
+        itself). Maybe create a config field like this:
+```lua
+---and also make some default implementation
+---@param should_fall: fun(CellularAutomatonCell):boolean
+```
+- [ ] support for nested animations (if they're on the same tabpage)
+- [ ] `listchars` support?
+- [ ] wrap support
+    - it's trickier than I thought earlier...
+        `linebreak`, `showbreak`, `breakat`, `wrapmargin`,
+        `display` - need to respect all of this settings
+- [ ] fold support
+- [ ] conceal support (both old-style and extmark-based)
+- [ ] ability to also fall down numbers, folds and signs?
+- [ ] better performance
+    - the more things I made in this project the bigger startuptime is
+        (I mean *load_base_grid* execution time): more difficult virtual
+        column iteration, there's whole extmark stack for highlighting
+        (not just one highlight group) etc. It is possible
+        to make some performance improvements?
+
+## Supported animations
 
 ### Make it Rain
 
