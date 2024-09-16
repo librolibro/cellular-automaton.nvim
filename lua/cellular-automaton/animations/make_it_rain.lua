@@ -46,6 +46,7 @@ local init_empty = function(cell)
       or vim.fn.synIDattr(hl_id, "underdouble") == "1"
       or vim.fn.synIDattr(hl_id, "underdotted") == "1"
       or vim.fn.synIDattr(hl_id, "underdashed") == "1"
+      or vim.fn.synIDattr(hl_id, "strikethrough") == "1"
     then
       cell.empty = false
       return
