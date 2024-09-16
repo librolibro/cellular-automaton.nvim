@@ -1,10 +1,23 @@
+---@class _CA_MakeItRainCell: CellularAutomatonCell
+---@field disperse_direction? -1|1
+---@field should_not_fall boolean
+---@field processed boolean
+---@field empty boolean
+
+---@class _CA_MakeItRainGrid: {[integer]: _CA_MakeItRainCell[], frame: integer}
+
+---@class _CA_MakeItRainConfig: CellularAutomatonConfig
+---@field side_noise boolean
+---@field disperse_rate integer
+
+---@type _CA_MakeItRainConfig
 local M = {
   fps = 50,
   side_noise = true,
   disperse_rate = 3,
 }
 
----@param cell CellularAutomatonCell
+---@param cell _CA_MakeItRainCell
 ---@param ... string
 ---@return boolean
 local cell_hl_matches = function(cell, ...)
@@ -18,7 +31,7 @@ local cell_hl_matches = function(cell, ...)
   return false
 end
 
----@param cell CellularAutomatonCell
+---@param cell _CA_MakeItRainCell
 local init_empty = function(cell)
   if cell.char ~= " " then
     cell.empty = false
@@ -41,7 +54,7 @@ local init_empty = function(cell)
   cell.empty = true
 end
 
----@param grid CellularAutomatonGrid
+---@param grid _CA_MakeItRainGrid
 ---@param x integer
 ---@param y integer
 ---@return boolean
@@ -49,7 +62,7 @@ local cell_empty = function(grid, x, y)
   return x > 0 and x <= #grid and y > 0 and y <= #grid[x] and grid[x][y].empty
 end
 
----@param grid CellularAutomatonGrid
+---@param grid _CA_MakeItRainGrid
 ---@param x1 integer
 ---@param y1 integer
 ---@param x2 integer
@@ -58,6 +71,7 @@ local swap_cells = function(grid, x1, y1, x2, y2)
   grid[x1][y1], grid[x2][y2] = grid[x2][y2], grid[x1][y1]
 end
 
+---@param grid _CA_MakeItRainGrid
 M.init = function(grid)
   grid.frame = 1
   for i = 1, #grid do
@@ -69,6 +83,8 @@ M.init = function(grid)
   end
 end
 
+---@param grid _CA_MakeItRainGrid
+---@return boolean
 M.update = function(grid)
   grid.frame = grid.frame + 1
   local frame = grid.frame
