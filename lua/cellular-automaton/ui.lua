@@ -3,14 +3,16 @@ local M = {}
 ---@param winid integer
 ---@param wininfo vim.fn.getwininfo.ret.item
 local configure_window = function(winid, wininfo)
+  vim.wo[winid].cursorline = false
+  vim.wo[winid].colorcolumn = ""
+  -- Reproducing host_window's textoff
+  -- using big fixed 'nuw', 'scl' and 'fdc'
   vim.wo[winid].relativenumber = false
   if wininfo.textoff == 0 then
     vim.wo[winid].number = false
     vim.wo[winid].signcolumn = "no"
     vim.wo[winid].foldcolumn = "0"
   else
-    -- Reproducing host_window's textoff
-    -- using big fixed 'nuw', 'scl' and 'fdc'
     local textoff_left = wininfo.textoff
 
     local nuw_limit = 20

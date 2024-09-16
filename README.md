@@ -167,6 +167,7 @@ map_automaton("<leader>fml", "make_it_rain", 25)
 - [x] support for nested animations (if they're on the same tabpage)
     - didn't test it properly but looks like it's working
 - [x] ability to start animation for not current window
+- [x] disable `colorcolumn`/`cursorline` for animation window
 - [ ] `listchars` support?
 - [ ] wrap support
     - it's trickier than I thought earlier...
