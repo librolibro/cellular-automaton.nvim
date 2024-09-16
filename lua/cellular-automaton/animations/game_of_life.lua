@@ -5,7 +5,7 @@ local M = {
   respawn_condition = 3,
 }
 
----@param grid CellularAutomatonGrid
+---@param grid CellularAutomatonCell[][]
 ---@param x integer
 ---@param y integer
 ---@return boolean
@@ -13,7 +13,7 @@ local function is_cell_alive(grid, x, y)
   return x > 0 and x <= #grid and y > 0 and y <= #grid[x] and grid[x][y].char ~= " "
 end
 
----@param grid CellularAutomatonGrid
+---@param grid CellularAutomatonCell[][]
 ---@param x integer
 ---@param y integer
 ---@return CellularAutomatonCell[]
@@ -39,7 +39,7 @@ local function get_neighbours(grid, x, y)
   return neighbours
 end
 
----@param grid CellularAutomatonGrid
+---@param grid CellularAutomatonCell[][]
 ---@param x integer
 ---@param y integer
 ---@return integer
@@ -47,15 +47,15 @@ local function count_neighbours(grid, x, y)
   return #(get_neighbours(grid, x, y))
 end
 
----@param grid CellularAutomatonGrid
+---@param grid CellularAutomatonCell[][]
 ---@param x integer
 ---@param y integer
 local function kill_cell(grid, x, y)
   grid[x][y] = { char = " ", hl_groups = {} }
 end
 
----@param grid CellularAutomatonGrid
----@param prev_grid CellularAutomatonGrid
+---@param grid CellularAutomatonCell[][]
+---@param prev_grid CellularAutomatonCell[][]
 ---@param x integer
 ---@param y integer
 local function respawn_cell(grid, prev_grid, x, y)

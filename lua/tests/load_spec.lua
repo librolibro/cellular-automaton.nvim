@@ -154,7 +154,7 @@ describe("load_base_grid:", function()
 
   describe("multicell chars:", function()
     ---Retrieve the "char slice" from the specified grid
-    ---@param grid CellularAutomatonGrid
+    ---@param grid CellularAutomatonCell[][]
     ---@param row integer
     ---@param col_start integer?
     ---@param col_end integer?

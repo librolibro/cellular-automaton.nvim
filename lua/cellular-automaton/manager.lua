@@ -8,7 +8,7 @@ local animation_context_class = require("cellular-automaton.context")
 M._running_animations = {}
 
 --- Processing another frame
----@param grid CellularAutomatonGrid
+---@param grid CellularAutomatonCell[][]
 ---@param cfg CellularAutomatonConfig
 ---@param ctx CellularAutomatonContext
 local function process_frame(grid, cfg, ctx)

@@ -30,11 +30,6 @@
 --- 'inspect_pos()') (might be empty if no highlights needed)
 ---@field hl_groups CellularAutomatonHl[]
 
---- Two-dimensional grid representing
---- current cellular automaton's state
----
----@alias CellularAutomatonGrid CellularAutomatonCell[][]
-
 --- Cellular automaton's (and animation's) common configuration
 ---
 ---@class CellularAutomatonConfig

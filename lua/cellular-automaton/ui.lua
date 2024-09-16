@@ -97,7 +97,7 @@ M.prepare_window_and_buffers = function(host_winid)
   return winid, buffers
 end
 
----@param grid CellularAutomatonGrid
+---@param grid CellularAutomatonCell[][]
 ---@param ctx CellularAutomatonContext
 M.render_frame = function(grid, ctx)
   -- quit if animation already interrupted

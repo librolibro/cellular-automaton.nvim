@@ -125,7 +125,7 @@ end
 --- symbols and tabs with replacers)
 ---@param window integer?
 ---@param buffer integer?
----@return CellularAutomatonGrid
+---@return CellularAutomatonCell[][]
 M.load_base_grid = function(window, buffer)
   if window == nil or window == 0 then
     -- NOTE: virtcol call with *winid*
@@ -144,7 +144,7 @@ M.load_base_grid = function(window, buffer)
   local last_visible_virtcol = first_visible_virtcol + window_width
 
   -- initialize the grid
-  ---@type CellularAutomatonGrid
+  ---@type CellularAutomatonCell[][]
   local grid = {}
   for i = 1, wininfo.height do
     grid[i] = {}

@@ -3,9 +3,9 @@ local assert = require("luassert")
 local M = {}
 
 ---@param pattern string[]
----@return CellularAutomatonGrid
+---@return CellularAutomatonCell[][]
 M.get_grid = function(pattern)
-  ---@type CellularAutomatonGrid
+  ---@type CellularAutomatonCell[][]
   local grid = {}
   for _, line in ipairs(pattern) do
     local row = {}
