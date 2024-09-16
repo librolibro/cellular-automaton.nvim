@@ -26,6 +26,8 @@ M.get_grid = function(pattern)
   return grid
 end
 
+---@param grid CellularAutomatonCell[][]
+---@return string
 local convert_grid_to_string = function(grid)
   local result = ""
   for _, row in ipairs(grid) do
@@ -37,6 +39,8 @@ local convert_grid_to_string = function(grid)
   return string.sub(result, 1, -2)
 end
 
+---@param str string
+---@return string
 local replace_spaces = function(str)
   local result = ""
   for i = 1, #str do
@@ -50,12 +54,18 @@ local replace_spaces = function(str)
   return result
 end
 
+---@param grid CellularAutomatonCell[][]
+---@param pattern string[]
+---@param error_msg? string
 M.assert_grid_same = function(grid, pattern, error_msg)
   local got = "\n" .. convert_grid_to_string(grid) .. "\n"
   local expected = "\n" .. table.concat(pattern, "\n") .. "\n"
   assert.are.same(replace_spaces(got), replace_spaces(expected), error_msg)
 end
 
+---@param grid CellularAutomatonCell[][]
+---@param pattern string[]
+---@param error_msg? string
 M.assert_grid_different = function(grid, pattern, error_msg)
   local got = "\n" .. convert_grid_to_string(grid) .. "\n"
   local expected = "\n" .. table.concat(pattern, "\n") .. "\n"

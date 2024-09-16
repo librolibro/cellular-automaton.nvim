@@ -4,6 +4,7 @@ local c = require("tests.animations.common")
 
 describe("make_it_rain:", function()
   ---@param pattern string[]
+  ---@return _CA_MakeItRainGrid
   local init_grid = function(pattern)
     local grid = c.get_grid(pattern)
     m.init(grid)
