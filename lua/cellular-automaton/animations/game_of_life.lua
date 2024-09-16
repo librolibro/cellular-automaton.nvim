@@ -1,3 +1,9 @@
+---@class _CA_GameOfLifeConfig: CellularAutomatonConfig
+---@field overpopultion_thr integer
+---@field underpopulation_thr integer
+---@field respawn_condition integer
+
+---@type _CA_GameOfLifeConfig
 local M = {
   fps = 10,
   overpopultion_thr = 4,
@@ -63,6 +69,8 @@ local function respawn_cell(grid, prev_grid, x, y)
   grid[x][y] = vim.deepcopy(neighbours[math.random(1, #neighbours)])
 end
 
+---@param grid CellularAutomatonCell[][]
+---@return boolean
 M.update = function(grid)
   local reference = vim.deepcopy(grid)
   local was_state_updated = false

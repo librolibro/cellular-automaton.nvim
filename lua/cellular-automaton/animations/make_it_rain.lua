@@ -13,6 +13,7 @@
 ---@type _CA_MakeItRainConfig
 local M = {
   fps = 50,
+  name = "",
   side_noise = true,
   disperse_rate = 3,
 }
@@ -98,7 +99,8 @@ M.update = function(grid)
   local was_state_updated = false
   for x0 = #grid - 1, 1, -1 do
     for i = 1, #grid[x0] do
-      -- iterate through grid from bottom to top using snake move
+      -- iterate through grid from bottom
+      -- to top using snake move
       -- >>>>>>>>>>>>
       -- ^<<<<<<<<<<<
       -- >>>>>>>>>>>^
