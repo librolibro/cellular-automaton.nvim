@@ -4,8 +4,6 @@ local M = {
   disperse_rate = 3,
 }
 
-local frame
-
 ---@param cell CellularAutomatonCell
 ---@param ... string
 ---@return boolean
@@ -61,7 +59,7 @@ local swap_cells = function(grid, x1, y1, x2, y2)
 end
 
 M.init = function(grid)
-  frame = 1
+  grid.frame = 1
   for i = 1, #grid do
     for j = 1, #grid[i] do
       local cell = grid[i][j]
@@ -72,7 +70,8 @@ M.init = function(grid)
 end
 
 M.update = function(grid)
-  frame = frame + 1
+  grid.frame = grid.frame + 1
+  local frame = grid.frame
   -- reset 'processed' flag
   for i = 1, #grid, 1 do
     for j = 1, #grid[i] do
