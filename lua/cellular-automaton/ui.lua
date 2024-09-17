@@ -116,7 +116,7 @@ M.render_frame = function(grid, ctx)
     end
     table.insert(lines, table.concat(chars, ""))
   end
-  vim.api.nvim_buf_set_lines(bufnr, 0, vim.api.nvim_win_get_height(ctx.winid), false, lines)
+  vim.api.nvim_buf_set_lines(bufnr, 0, #grid, false, lines)
   -- update highlights
   vim.api.nvim_buf_clear_namespace(bufnr, ctx.hl_ns_id, 0, -1)
   for i, row in ipairs(grid) do
