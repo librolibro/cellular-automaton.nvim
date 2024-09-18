@@ -8,6 +8,19 @@ local is_hl_group_a_spell = function(name)
   return name:find("^@?spell$") ~= nil or name:find("^@?nospell$") ~= nil
 end
 
+---@param hl_groups CellularAutomatonHl[]
+---@return CellularAutomatonHl[]
+local hl_groups_copy = function(hl_groups)
+  local new_table = {}
+  for i, hl in ipairs(hl_groups) do
+    new_table[i] = {
+      name = hl.name,
+      priority = hl.priority,
+    }
+  end
+  return new_table
+end
+
 --- table<priority, {total: amount_of_hls_with_this_priority, current_offset: current_offset}>
 ---@alias _CA_PriorityCounters table<integer, {total: integer, current_offset: integer}>
 
@@ -31,15 +44,10 @@ end
 --- highlighting is using) and all extended marks (TS highlighting,
 --- LSP semantic tokens and any other kinds of extmarks with hl group)
 ---@param buffer integer
----@param cell CellularAutomatonCell
+---@param hl_groups CellularAutomatonHl[]
 ---@param i integer line number (1-based)
 ---@param j integer column number (byte index, 1-based)
-local get_dominant_hl_group = function(buffer, cell, i, j)
-  if not vim.tbl_isempty(cell.hl_groups) then
-    -- Cell was already initialized
-    return
-  end
-  local hl_groups = cell.hl_groups
+local retrieve_hl_groups = function(buffer, hl_groups, i, j)
   local items = vim.inspect_pos(buffer, i - 1, j - 1, {
     syntax = true,
     treesitter = true,
@@ -211,6 +219,14 @@ M.load_base_grid = function(window, buffer)
         if not is_tab then
           local translated_char = vim.fn.strtrans(char)
           if strtrans_valid(translated_char, columns_occupied) then
+            ---@type CellularAutomatonHl[]
+            local strtrans_hl_groups = {
+              -- NOTE: I thought that vim.highlight.priorities.syntax
+              --   was more appropriate priority for this hl group
+              --   but any of TS capture overrides it
+              { name = "SpecialKey", priority = 5000 },
+            }
+            retrieve_hl_groups(buffer, strtrans_hl_groups, lineno, virtcol)
             -- for cindex = char_screen_col_start, char_screen_col_end do
             for cindex = 1, columns_occupied do
               if cindex < (first_visible_virtcol - char_screen_col_start + 1) then
@@ -222,10 +238,7 @@ M.load_base_grid = function(window, buffer)
               end
               cell = grid[i][jj]
               cell.char = translated_char:sub(cindex, cindex)
-              cell.hl_groups[#cell.hl_groups + 1] = {
-                name = "SpecialKey",
-                priority = vim.highlight.priorities.user,
-              }
+              cell.hl_groups = hl_groups_copy(strtrans_hl_groups)
               ::to_next_strtrans_char::
             end
             goto to_next_char
@@ -252,7 +265,7 @@ M.load_base_grid = function(window, buffer)
         end
         cell = grid[i][jj]
         cell.char = char
-        get_dominant_hl_group(buffer, cell, lineno, virtcol)
+        retrieve_hl_groups(buffer, cell.hl_groups, lineno, virtcol)
       end
       ::to_next_char::
     end
