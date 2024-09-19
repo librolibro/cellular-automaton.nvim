@@ -10,16 +10,19 @@ local cell_hl_matches = require("cellular-automaton.common").cell_hl_matches
 ---@field [integer] _CA_MakeItRainCell[]
 ---@field frame integer
 
+---@alias _CA_ModifyCellFunc fun(cell: _CA_MakeItRainCell, i: integer, j: integer, rows: integer, cols: integer)
+
 ---@class _CA_MakeItRainConfig: CellularAutomatonConfig
----@field default_should_not_fall_func fun(cell: CellularAutomatonCell):boolean
----@field should_not_fall nil|fun(cell: CellularAutomatonCell):boolean
+---@field default_modify_cell_func _CA_ModifyCellFunc
+---@field modify_cell nil|_CA_ModifyCellFunc
 ---@field side_noise boolean
 ---@field disperse_rate integer
 
----@param cell CellularAutomatonCell
----@return boolean
-local default_should_not_fall_func = function(cell)
-  return cell_hl_matches(cell, "[cC]omment")
+---@param cell _CA_MakeItRainCell
+local default_modify_cell_func = function(cell)
+  if not cell.should_not_fall then
+    cell.should_not_fall = cell_hl_matches(cell, "[cC]omment")
+  end
 end
 
 ---@type _CA_MakeItRainConfig
@@ -28,8 +31,8 @@ local M = {
   name = "",
   side_noise = true,
   disperse_rate = 3,
-  should_not_fall = default_should_not_fall_func,
-  default_should_not_fall_func = default_should_not_fall_func,
+  modify_cell = default_modify_cell_func,
+  default_modify_cell_func = default_modify_cell_func,
 }
 
 ---@param cell _CA_MakeItRainCell
@@ -76,18 +79,18 @@ end
 ---@param cfg _CA_MakeItRainConfig
 M.init = function(grid, cfg)
   grid.frame = 1
-  local should_not_fall_func = cfg.should_not_fall
-  if should_not_fall_func == nil then
-    should_not_fall_func = function()
-      return false
-    end
-  end
-  for i = 1, #grid do
-    for j = 1, #grid[i] do
+  local modify_cell_func = cfg.modify_cell
+  local rows = #grid
+  local cols = #grid[1]
+  for i = 1, rows do
+    for j = 1, cols do
       local cell = grid[i][j]
       cell.processed = false
       cell.empty = init_empty(cell)
-      cell.should_not_fall = cell.empty or should_not_fall_func(cell)
+      cell.should_not_fall = cell.empty
+      if modify_cell_func then
+        modify_cell_func(cell, i, j, rows, cols)
+      end
     end
   end
 end
@@ -120,7 +123,7 @@ M.update = function(grid)
       local cell = grid[x0][y0]
 
       -- skip comments or already proccessed cells
-      if cell.should_not_fall or cell.processed == true then
+      if cell.empty or cell.should_not_fall or cell.processed == true then
         goto continue
       end
 
