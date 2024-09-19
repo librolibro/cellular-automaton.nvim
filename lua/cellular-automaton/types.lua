@@ -41,8 +41,8 @@
 ---@field fps integer
 ---
 --- (Optional) function for grid initialization
----@field init fun(CellularAutomatonGrid)?
+---@field init nil|fun(grid: CellularAutomatonCell[][], cfg: CellularAutomatonConfig)
 ---
 --- Update function. Return true to notify that automaton
 --- state has been changed and further processing needed
----@field update fun(CellularAutomatonGrid):boolean
+---@field update fun(grid: CellularAutomatonCell[][]):boolean

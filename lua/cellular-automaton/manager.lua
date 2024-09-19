@@ -98,7 +98,7 @@ local function _execute_animation(cfg, host_winid, host_bufnr, ctx)
   local l = require("cellular-automaton.load")
   local grid = l.load_base_grid(host_winid, host_bufnr)
   if cfg.init ~= nil then
-    cfg.init(grid)
+    cfg.init(grid, cfg)
   end
   setup_cleaning(ctx)
   process_frame(grid, cfg, ctx)

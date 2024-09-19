@@ -1,14 +1,26 @@
+local cell_hl_matches = require("cellular-automaton.common").cell_hl_matches
+
 ---@class _CA_MakeItRainCell: CellularAutomatonCell
 ---@field disperse_direction? -1|1
 ---@field should_not_fall boolean
 ---@field processed boolean
 ---@field empty boolean
 
----@class _CA_MakeItRainGrid: {[integer]: _CA_MakeItRainCell[], frame: integer}
+---@class _CA_MakeItRainGrid
+---@field [integer] _CA_MakeItRainCell[]
+---@field frame integer
 
 ---@class _CA_MakeItRainConfig: CellularAutomatonConfig
+---@field default_should_not_fall_func fun(cell: CellularAutomatonCell):boolean
+---@field should_not_fall nil|fun(cell: CellularAutomatonCell):boolean
 ---@field side_noise boolean
 ---@field disperse_rate integer
+
+---@param cell CellularAutomatonCell
+---@return boolean
+local default_should_not_fall_func = function(cell)
+  return cell_hl_matches(cell, "[cC]omment")
+end
 
 ---@type _CA_MakeItRainConfig
 local M = {
@@ -16,27 +28,15 @@ local M = {
   name = "",
   side_noise = true,
   disperse_rate = 3,
+  should_not_fall = default_should_not_fall_func,
+  default_should_not_fall_func = default_should_not_fall_func,
 }
 
 ---@param cell _CA_MakeItRainCell
----@param ... string
 ---@return boolean
-local cell_hl_matches = function(cell, ...)
-  for _, pattern in ipairs({ ... }) do
-    for _, hl_group in ipairs(cell.hl_groups) do
-      if hl_group.name:find(pattern) then
-        return true
-      end
-    end
-  end
-  return false
-end
-
----@param cell _CA_MakeItRainCell
 local init_empty = function(cell)
   if cell.char ~= " " then
-    cell.empty = false
-    return
+    return false
   end
   for _, hl_group in ipairs(cell.hl_groups) do
     local hl_id = vim.fn.synIDtrans(vim.fn.hlID(hl_group.name))
@@ -49,11 +49,10 @@ local init_empty = function(cell)
       or vim.fn.synIDattr(hl_id, "underdashed") == "1"
       or vim.fn.synIDattr(hl_id, "strikethrough") == "1"
     then
-      cell.empty = false
-      return
+      return false
     end
   end
-  cell.empty = true
+  return true
 end
 
 ---@param grid _CA_MakeItRainGrid
@@ -74,13 +73,21 @@ local swap_cells = function(grid, x1, y1, x2, y2)
 end
 
 ---@param grid _CA_MakeItRainGrid
-M.init = function(grid)
+---@param cfg _CA_MakeItRainConfig
+M.init = function(grid, cfg)
   grid.frame = 1
+  local should_not_fall_func = cfg.should_not_fall
+  if should_not_fall_func == nil then
+    should_not_fall_func = function()
+      return false
+    end
+  end
   for i = 1, #grid do
     for j = 1, #grid[i] do
       local cell = grid[i][j]
-      init_empty(cell)
-      cell.should_not_fall = cell.empty or cell_hl_matches(cell, "[cC]omment")
+      cell.processed = false
+      cell.empty = init_empty(cell)
+      cell.should_not_fall = cell.empty or should_not_fall_func(cell)
     end
   end
 end

@@ -208,7 +208,7 @@ local config = {
 }
 
 -- init function is invoked only once at the start
--- config.init = function (grid) end
+-- config.init = function (grid, config) end
 
 -- update function
 config.update = function (grid)
