@@ -151,19 +151,7 @@ map_automaton("<leader>fml", "make_it_rain", 25)
     at the same place, relative to it but not to the editor)
 - [x] `strtrans()` support
 - [ ] support MORE extmarks (e.g. diagnostics)
-- [ ] more flexible **make_it_rain** configuration
-    - earlier to determine whether the cell should fall or not only
-        *most dominant* group analyzed - now when the whole extmark
-        stack is available it's more precise but still not flexible
-        in my opinion. E.g. when I'm reading a vimdoc page and calling
-        **make_it_rain** animation I want to injected languages' comments
-        to fall - or make **@markup.heading.1.vimdoc** solid and 'not
-        fallable' (but only long **=========** lines and not the headers
-        itself). Maybe create a config field like this:
-```lua
----and also make some default implementation
----@param should_fall: fun(CellularAutomatonCell):boolean
-```
+- [x] more flexible **make_it_rain** configuration
 - [x] support for nested animations (if they're on the same tabpage)
     - didn't test it properly but looks like it's working
 - [x] ability to start animation for not current window
