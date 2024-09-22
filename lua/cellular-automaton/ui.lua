@@ -41,14 +41,19 @@ local configure_window = function(winid, wininfo)
       if math.fmod(scl_width, 2) == 1 then
         scl_width = scl_width - 1
       end
-      vim.wo[winid].signcolumn = string.format("yes:%d", scl_width / 2)
+      local scl = scl_width / 2
+      vim.wo[winid].signcolumn = scl > 0 and string.format("yes:%d", scl) or "no"
       textoff_left = textoff_left - scl_width
+    else
+      vim.wo[winid].signcolumn = "no"
     end
 
     if textoff_left > 0 then
       local fdc_width = math.min(textoff_left, 9)
       vim.wo[winid].foldcolumn = tostring(fdc_width)
       textoff_left = textoff_left - fdc_width
+    else
+      vim.wo[winid].foldcolumn = "0"
     end
 
     if textoff_left > 0 then
