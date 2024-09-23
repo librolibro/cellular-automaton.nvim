@@ -34,6 +34,8 @@ local configure_window = function(winid, wininfo)
         vim.wo[winid].numberwidth = nuw
         textoff_left = textoff_left - nuw
       end
+    else
+      vim.wo[winid].number = false
     end
 
     if textoff_left > 0 then
