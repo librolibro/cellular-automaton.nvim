@@ -37,6 +37,27 @@ local function setup_viewport(h, w, lines, ver_scroll, hor_scroll, win_options)
   end
 end
 
+---Retrieve the "char slice" from the specified grid
+---@param grid CellularAutomatonCell[][]
+---@param row integer
+---@param col_start integer?
+---@param col_end integer?
+---@return string
+local get_chars_from_grid = function(grid, row, col_start, col_end)
+  col_start = col_start or 1
+  col_end = col_end or #grid[row]
+
+  assert.truthy(col_start > 0 and col_end > 0 and col_start <= col_end)
+  assert.truthy(col_end <= #grid[row])
+
+  return vim
+    .iter(vim.fn.range(col_start, col_end))
+    :map(function(col)
+      return grid[row][col].char
+    end)
+    :join("")
+end
+
 ---@param cell CellularAutomatonCell
 ---@param hl_name string
 local assert_one_hl = function(cell, hl_name)
@@ -153,27 +174,6 @@ describe("load_base_grid:", function()
   end)
 
   describe("multicell chars:", function()
-    ---Retrieve the "char slice" from the specified grid
-    ---@param grid CellularAutomatonCell[][]
-    ---@param row integer
-    ---@param col_start integer?
-    ---@param col_end integer?
-    ---@return string
-    local get_chars_from_grid = function(grid, row, col_start, col_end)
-      col_start = col_start or 1
-      col_end = col_end or #grid[row]
-
-      assert.truthy(col_start > 0 and col_end > 0 and col_start <= col_end)
-      assert.truthy(col_end <= #grid[row])
-
-      return vim
-        .iter(vim.fn.range(col_start, col_end))
-        :map(function(col)
-          return grid[row][col].char
-        end)
-        :join("")
-    end
-
     it("multi-byte but one-cell chars can entirely fit it *char* field", function()
       local width = 10
       local height = 10
@@ -457,6 +457,205 @@ describe("load_base_grid:", function()
       assert.same("AAA", get_chars_from_grid(grid, 2, 1, 3))
       assert.same("AA ", get_chars_from_grid(grid, 3, 1, 3))
       assert.same("A  ", get_chars_from_grid(grid, 4, 1, 3))
+    end)
+  end)
+
+  describe("wrap support:", function()
+    ---@param h integer
+    ---@param w integer
+    ---@param lines string[]
+    ---@param win_options? string[]
+    local viewport_for_wrap_testing = function(h, w, lines, win_options)
+      win_options = win_options or {}
+      win_options[#win_options + 1] = "wrap"
+      setup_viewport(h, w, lines, 0, 0, win_options)
+    end
+
+    it("without wrapping", function()
+      viewport_for_wrap_testing(3, 10, {
+        "long sentence",
+        "longenough",
+      })
+      vim.wo[0].wrap = false
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+      }, {
+        "long sente",
+        "longenough",
+        "          ",
+      })
+    end)
+
+    it("simple wrapping", function()
+      viewport_for_wrap_testing(3, 10, {
+        "long sentence",
+        "longenough",
+      })
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+      }, {
+        "long sente",
+        "nce       ",
+        "longenough",
+      })
+    end)
+
+    it("last line didn't fit, dy=lastline", function()
+      viewport_for_wrap_testing(3, 10, {
+        "long sentence",
+        "now it's actually long",
+      })
+      vim.o.display = "lastline"
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+      }, {
+        "long sente",
+        "nce       ",
+        "now it'@@@",
+      })
+    end)
+
+    it("last line didn't fit, dy=lastline (custom 'fcs')", function()
+      viewport_for_wrap_testing(3, 10, {
+        "long sentence",
+        "now it's actually long",
+      })
+      vim.o.display = "lastline"
+      vim.wo[0].fillchars = "lastline:&"
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+      }, {
+        "long sente",
+        "nce       ",
+        "now it'&&&",
+      })
+    end)
+
+    it("last line didn't fit, dy=", function()
+      viewport_for_wrap_testing(3, 10, {
+        "long sentence",
+        "now it's actually long",
+      })
+      vim.o.display = ""
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+      }, {
+        "long sente",
+        "nce       ",
+        "@         ",
+      })
+    end)
+
+    it("last line didn't fit, dy= (custom 'fcs')", function()
+      viewport_for_wrap_testing(3, 10, {
+        "long sentence",
+        "now it's actually long",
+      })
+      vim.o.display = ""
+      vim.wo[0].fillchars = "lastline:&"
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+      }, {
+        "long sente",
+        "nce       ",
+        "&         ",
+      })
+    end)
+
+    it("last line didn't fit, dy= (textoff=1)", function()
+      viewport_for_wrap_testing(3, 11, {
+        "long sentence",
+        "now it's actually long",
+      })
+      vim.o.display = ""
+      vim.wo[0].foldcolumn = "1"
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+      }, {
+        "long sente",
+        "nce       ",
+        "@         ",
+      })
+    end)
+
+    it("last line didn't fit, dy=truncate", function()
+      viewport_for_wrap_testing(3, 10, {
+        "long sentence",
+        "now it's actually long",
+      })
+      vim.o.display = "truncate"
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+      }, {
+        "long sente",
+        "nce       ",
+        "@@@       ",
+      })
+    end)
+
+    it("last line didn't fit, dy=truncate (custom 'fcs')", function()
+      viewport_for_wrap_testing(3, 10, {
+        "long sentence",
+        "now it's actually long",
+      })
+      vim.o.display = "truncate"
+      vim.wo[0].fillchars = "lastline:&"
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+      }, {
+        "long sente",
+        "nce       ",
+        "&&&       ",
+      })
+    end)
+
+    it("last line didn't fit, dy=truncate (textoff)", function()
+      for i = 0, 4 do
+        viewport_for_wrap_testing(3, 10 + i, {
+          "long sentence",
+          "now it's actually long",
+        })
+        vim.o.display = "truncate"
+        vim.wo[0].foldcolumn = tostring(i)
+        local grid = l.load_base_grid(0, 0)
+        local expected_to_see = math.max(0, 3 - i)
+        assert.same({
+          get_chars_from_grid(grid, 1),
+          get_chars_from_grid(grid, 2),
+          get_chars_from_grid(grid, 3),
+        }, {
+          "long sente",
+          "nce       ",
+          string.rep("@", expected_to_see) .. string.rep(" ", 10 - expected_to_see),
+        })
+      end
     end)
   end)
 end)
