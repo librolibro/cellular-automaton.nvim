@@ -183,7 +183,7 @@ https://user-images.githubusercontent.com/37074839/204162517-35b429ad-4cef-45b1-
 
 ## Implementing your own cellular automaton logic
 Using a simple interface you can implement your own cellular automaton
-animation. You need to provide a configuration table with an `update` function,
+animation. You need to provide a configuration table with an `update` method,
 which takes a 2D grid of cells and modifies it in place \(base types described
 in [types.lua](./lua/cellular-automaton/types.lua) file\).
 
@@ -195,11 +195,11 @@ local config = {
     name = 'slide',
 }
 
--- init function is invoked only once at the start
--- config.init = function (grid, config) end
+-- init method is invoked only once at the start
+-- function config:init(grid) end
 
--- update function
-config.update = function (grid)
+-- update method
+function config:update(grid)
     for i = 1, #grid do
         local prev = grid[i][#(grid[i])]
         for j = 1, #(grid[i]) do

@@ -19,7 +19,7 @@ local function process_frame(grid, cfg, ctx)
   -- proccess frame
   ui.render_frame(grid, ctx)
   local render_at = common.time()
-  local state_changed = cfg.update(grid)
+  local state_changed = cfg:update(grid)
 
   -- schedule next frame
   local fps = cfg.fps
@@ -72,7 +72,7 @@ local function setup_cleaning(ctx)
   clean_on_events(ctx, "WinResized", {
     callback = function(event_data)
       for _, winid in
-        ipairs(assert(vim.v.event.windows--[=[@as integer[]]=]))
+        ipairs(assert(vim.v.event.windows) --[=[@as integer[]]=])
       do
         -- If any of the non-floating windows changed its size (or
         -- this exact floating window itself) then stop the animation
@@ -98,7 +98,7 @@ local function _execute_animation(cfg, host_winid, host_bufnr, ctx)
   local l = require("cellular-automaton.load")
   local grid = l.load_base_grid(host_winid, host_bufnr)
   if cfg.init ~= nil then
-    cfg.init(grid, cfg)
+    cfg:init(grid)
   end
   setup_cleaning(ctx)
   process_frame(grid, cfg, ctx)

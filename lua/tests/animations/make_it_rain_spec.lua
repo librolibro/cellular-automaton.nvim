@@ -7,7 +7,7 @@ describe("make_it_rain:", function()
   ---@return _CA_MakeItRainGrid
   local init_grid = function(pattern)
     local grid = c.get_grid(pattern)
-    m.init(grid)
+    m:init(grid)
     m.side_noise = false
     m.disperse_rate = 2
     return grid
@@ -18,7 +18,7 @@ describe("make_it_rain:", function()
       " x ",
       "   ",
     })
-    m.update(grid)
+    m:update(grid)
     c.assert_grid_same(grid, {
       "   ",
       " x ",
@@ -82,7 +82,7 @@ describe("make_it_rain:", function()
       for _, case in ipairs(cases) do
         local grid = init_grid(case.initial)
         grid[1][2].disperse_direction = 1
-        m.update(grid)
+        m:update(grid)
         c.assert_grid_same(grid, case.expected)
       end
     end)
@@ -93,7 +93,7 @@ describe("make_it_rain:", function()
         "###",
       })
       grid[1][2].disperse_direction = -1
-      m.update(grid)
+      m:update(grid)
       assert.are.equal(grid[1][2].disperse_direction, 1)
     end)
   end)
@@ -155,7 +155,7 @@ describe("make_it_rain:", function()
       for i, case in ipairs(cases) do
         local grid = init_grid(case.initial)
         grid[1][4].disperse_direction = -1
-        m.update(grid)
+        m:update(grid)
         c.assert_grid_same(grid, case.expected, "Fked up case: " .. i)
       end
     end)
@@ -166,7 +166,7 @@ describe("make_it_rain:", function()
         "###",
       })
       grid[1][2].disperse_direction = -1
-      m.update(grid)
+      m:update(grid)
       assert.are.equal(grid[1][2].disperse_direction, 1)
     end)
   end)
@@ -176,7 +176,7 @@ describe("make_it_rain:", function()
       " x ",
       " # ",
     })
-    m.update(grid)
+    m:update(grid)
     c.assert_grid_different(grid, {
       " x ",
       " # ",

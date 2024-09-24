@@ -76,10 +76,9 @@ local swap_cells = function(grid, x1, y1, x2, y2)
 end
 
 ---@param grid _CA_MakeItRainGrid
----@param cfg _CA_MakeItRainConfig
-M.init = function(grid, cfg)
+function M:init(grid)
   grid.frame = 1
-  local modify_cell_func = cfg.modify_cell
+  local modify_cell_func = self.modify_cell
   local rows = #grid
   local cols = #grid[1]
   for i = 1, rows do
@@ -97,7 +96,7 @@ end
 
 ---@param grid _CA_MakeItRainGrid
 ---@return boolean
-M.update = function(grid)
+function M:update(grid)
   grid.frame = grid.frame + 1
   local frame = grid.frame
   -- reset 'processed' flag
@@ -130,7 +129,7 @@ M.update = function(grid)
       cell.processed = true
 
       -- to introduce some randomness sometimes step aside
-      if M.side_noise then
+      if self.side_noise then
         local random = math.random()
         local side_step_probability = 0.05
         if random < side_step_probability then
@@ -154,7 +153,7 @@ M.update = function(grid)
         -- or to the side
         local disperse_direction = cell.disperse_direction or ({ -1, 1 })[math.random(1, 2)]
         local last_pos = { x0, y0 }
-        for d = 1, M.disperse_rate do
+        for d = 1, self.disperse_rate do
           local y = y0 + disperse_direction * d
           -- prevent teleportation
           if not cell_empty(grid, x0, y) then
