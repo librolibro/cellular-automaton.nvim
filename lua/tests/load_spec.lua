@@ -30,7 +30,7 @@ local function setup_viewport(h, w, lines, ver_scroll, hor_scroll, win_options)
   -- some of them may be overridden by win_options
   vim.wo[winid].number = false
   vim.wo[winid].relativenumber = false
-  vim.wo[winid].signcolumn = "yes"
+  vim.wo[winid].signcolumn = "no"
   vim.wo[winid].foldcolumn = "0"
   for _, option in ipairs(options) do
     vim.cmd("set " .. option)
@@ -291,7 +291,7 @@ describe("load_base_grid:", function()
       end
     end)
     it("tabs should be replaced (tabstop + hscroll)", function()
-      local width = 19
+      local width = 17
       local ts = 16
 
       -- NOTE: make the line at least twice longer than
@@ -308,7 +308,7 @@ describe("load_base_grid:", function()
         vim.cmd("normal! zh")
 
         local grid = l.load_base_grid(0, 0)
-        assert.truthy(#grid[1] == (ts + 1))
+        assert.are.same(#grid[1], (ts + 1))
 
         -- print(vim.inspect(get_chars_from_grid(grid, 1)))
         assert.same(
