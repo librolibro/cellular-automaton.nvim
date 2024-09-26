@@ -506,6 +506,22 @@ describe("load_base_grid:", function()
       })
     end)
 
+    it("big wrapping", function()
+      viewport_for_wrap_testing(4, 10, { "!this line will take almost 4 lines!" })
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "!this line",
+        " will take",
+        " almost 4 ",
+        "lines!    ",
+      })
+    end)
+
     it("last line didn't fit, dy=lastline", function()
       viewport_for_wrap_testing(3, 10, {
         "long sentence",
@@ -656,6 +672,182 @@ describe("load_base_grid:", function()
           string.rep("@", expected_to_see) .. string.rep(" ", 10 - expected_to_see),
         })
       end
+    end)
+
+    it("first line didn't fit", function()
+      for _, opt_value in ipairs({ "", "lastline", "truncate" }) do
+        viewport_for_wrap_testing(4, 4, {
+          "1234123451234561234567",
+        }, { "display=" .. opt_value })
+        local grid = l.load_base_grid(0, 0)
+        assert.same({
+          get_chars_from_grid(grid, 1),
+          get_chars_from_grid(grid, 2),
+          get_chars_from_grid(grid, 3),
+          get_chars_from_grid(grid, 4),
+        }, {
+          "1234",
+          "1234",
+          "5123",
+          "4561",
+        })
+      end
+    end)
+
+    it("first line didn't fit (skipcol > 0)", function()
+      viewport_for_wrap_testing(4, 4, {
+        "1234123451234561234567",
+      })
+      local grid = l.load_base_grid(0, 0)
+      vim.cmd("normal! gg04gj")
+      assert.are.equal(vim.fn.winsaveview().skipcol, 4)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "1234",
+        "5123",
+        "4561",
+        "2345",
+      })
+      vim.cmd("normal! gj")
+      assert.are.equal(vim.fn.winsaveview().skipcol, 8)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "5123",
+        "4561",
+        "2345",
+        "67  ",
+      })
+    end)
+
+    it("non first line didn't fit (2+ lines, dy=)", function()
+      viewport_for_wrap_testing(4, 4, {
+        "ssd ",
+        "abcdefghijklmnopqrst",
+      }, { "dy=" })
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "ssd ",
+        "@   ",
+        "@   ",
+        "@   ",
+      })
+    end)
+
+    it("non first line didn't fit (2+ lines, dy=lastline)", function()
+      viewport_for_wrap_testing(4, 4, {
+        "ssd ",
+        "abcdefghijklmnopqrst",
+      }, { "dy=" })
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "ssd ",
+        "abcd",
+        "efgh",
+        "i@@@",
+      })
+    end)
+
+    it("non first line didn't fit (2+ lines, dy=truncate)", function()
+      for textoff = 0, 4 do
+        viewport_for_wrap_testing(4, 4 + textoff, {
+          "ssd ",
+          "abcdefghijklmnopqrst",
+        }, {
+          "foldcolumn=" .. tostring(textoff),
+          "dy=truncate",
+        })
+        local grid = l.load_base_grid(0, 0)
+        local nchars = math.max(0, 3 - textoff)
+        assert.same({
+          get_chars_from_grid(grid, 1),
+          get_chars_from_grid(grid, 2),
+          get_chars_from_grid(grid, 3),
+          get_chars_from_grid(grid, 4),
+        }, {
+          "ssd ",
+          "abcd",
+          "efgh",
+          string.rep("@", nchars) .. string.rep(" ", 4 - nchars),
+        })
+      end
+    end)
+
+    it("double-wide character doesn't fit at the end of the line", function()
+      viewport_for_wrap_testing(3, 11, {
+        "emoji:    💣 ...",
+        "thatonefits",
+      })
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+      }, {
+        "emoji:    >",
+        "@@ ...     ",
+        "thatonefits",
+      })
+    end)
+
+    it("double-wide character that will never fit", function()
+      viewport_for_wrap_testing(8, 1, { "a 💣 and some text, doesn't matter" })
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+        get_chars_from_grid(grid, 5),
+        get_chars_from_grid(grid, 6),
+        get_chars_from_grid(grid, 7),
+        get_chars_from_grid(grid, 8),
+      }, {
+        "a",
+        " ",
+        ">",
+        ">",
+        ">",
+        ">",
+        ">",
+        ">",
+      })
+    end)
+
+    it("strtrans()-translated chars", function()
+      viewport_for_wrap_testing(4, 10, {
+        "123456\xef\xbf\xbfblabla",
+        "123456789\x01blablabla",
+      })
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "123456<fff",
+        "f>blabla  ",
+        "123456789^",
+        "Ablablabla",
+      })
     end)
   end)
 end)
