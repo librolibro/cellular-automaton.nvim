@@ -129,6 +129,58 @@ local strtrans_valid = function(translated, expected_len)
   return true
 end
 
+---@param cell CellularAutomatonCell
+---@param char? string
+local convert_to_nontext = function(cell, char)
+  if char then
+    cell.char = char
+  end
+  cell.hl_groups = {
+    name = "NonText",
+    priority = vim.highlight.priorities.syntax,
+  }
+end
+
+---@param cell CellularAutomatonCell
+local clear_cell = function(cell)
+  cell.char = " "
+  cell.hl_groups = {}
+end
+
+---@alias _lastline "lastline"|"truncate"|nil
+
+---@param grid CellularAutomatonCell[][]
+---@param lastline _lastline
+---@param lastline_char string
+---@param lines_wrapped integer
+---@param textoff integer
+local prepare_lastlines = function(grid, lastline, lastline_char, lines_wrapped, textoff)
+  local grid_height = #grid
+  local grid_width = #grid[1]
+
+  if not lastline then
+    for row = grid_height - lines_wrapped, grid_height do
+      convert_to_nontext(grid[row][1], lastline_char)
+      for col = 2, grid_width do
+        clear_cell(grid[row][col])
+      end
+    end
+  elseif lastline == "lastline" then
+    for col = grid_width, grid_width - math.min(grid_width, 3) + 1, -1 do
+      convert_to_nontext(grid[grid_height][col], lastline_char)
+    end
+  else
+    local chars_to_show = math.max(0, 3 - textoff)
+    for col = 1, grid_width do
+      if col <= chars_to_show then
+        convert_to_nontext(grid[grid_height][col], lastline_char)
+      else
+        clear_cell(grid[grid_height][col])
+      end
+    end
+  end
+end
+
 --- Load base grid (replace multicell
 --- symbols and tabs with replacers)
 ---@param window integer?
@@ -144,45 +196,80 @@ M.load_base_grid = function(window, buffer)
     buffer = vim.api.nvim_get_current_buf()
   end
 
+  ---@type string?, _lastline
+  local lastline_char, lastline
+  local wrap_enabled = vim.wo[window].wrap
+  if wrap_enabled then
+    for _, dy_opt in
+      ipairs(vim.opt.display:get() --[=[@as string[]]=])
+    do
+      local is_truncate = dy_opt == "truncate"
+      if not is_truncate and dy_opt ~= "lastline" then
+        goto continue
+      end
+
+      if is_truncate then
+        lastline = "truncate"
+      elseif lastline ~= "truncate" then
+        lastline = "lastline"
+      end
+      ::continue::
+    end
+    lastline_char = vim.wo[window].fillchars:match("lastline:([^,]+)") or "@"
+    assert(vim.fn.strcharlen(lastline_char) == 1)
+  end
+
+  local winsaveview = vim.fn.winsaveview()
   local wininfo = vim.fn.getwininfo(window)[1]
   local window_width = wininfo.width - wininfo.textoff
-  local first_lineno = wininfo.topline - 1
 
-  local first_visible_virtcol = vim.fn.winsaveview().leftcol + 1
+  -- 0-based exclusive
+  -- NOTE: since botline is last
+  --   COMPLETED line take one more
+  local first_lineno = wininfo.topline - 1
+  local last_lineno = wininfo.botline + 1
+
+  -- 1-based exclusive (for 'nowrap')
+  local first_visible_virtcol = winsaveview.leftcol + 1
   local last_visible_virtcol = first_visible_virtcol + window_width
 
   -- initialize the grid
   ---@type CellularAutomatonCell[][]
   local grid = {}
-  for i = 1, wininfo.height do
+  local grid_height = wininfo.height
+  for i = 1, grid_height do
     grid[i] = {}
     for j = 1, window_width do
       grid[i][j] = { char = " ", hl_groups = {} }
     end
   end
-  local data = vim.api.nvim_buf_get_lines(buffer, first_lineno, first_lineno + wininfo.height, false)
+  local data = vim.api.nvim_buf_get_lines(buffer, first_lineno, last_lineno, false)
 
   -- update with buffer data
-  for i, line in ipairs(data) do
+  local i = 0
+  for line_offset, line in ipairs(data) do
     local jj = 0
     local col = 0
     local virtcol = 0
-    local lineno = first_lineno + i
+    local lineno = first_lineno + line_offset
+    local is_first_line = line_offset == 1
+    local lines_wrapped = 0
+    i = i + 1
+    if i > grid_height then
+      break
+    end
 
-    ---@type CellularAutomatonCell
-    local cell
-
-    ---@type integer
-    local char_screen_col_start
-
-    ---@type integer
-    local char_screen_col_end
+    ---@type CellularAutomatonCell, integer, integer
+    local cell, char_screen_col_start, char_screen_col_end
 
     while true do
       col = col + 1
       virtcol = virtcol + 1
-      char_screen_col_start, char_screen_col_end = unpack(vim.fn.virtcol({ lineno, virtcol }, 1, window))
-      if char_screen_col_start == 0 and char_screen_col_end == 0 or char_screen_col_start > last_visible_virtcol then
+      char_screen_col_start, char_screen_col_end = unpack(vim.fn.virtcol({
+        lineno,
+        virtcol,
+      }, 1, window))
+      if char_screen_col_start == 0 or (not wrap_enabled and char_screen_col_start > last_visible_virtcol) then
         break
       end
 
@@ -195,7 +282,10 @@ M.load_base_grid = function(window, buffer)
       end
       virtcol = virtcol + #char - 1
 
-      if char_screen_col_end < first_visible_virtcol then
+      if
+        (not wrap_enabled and char_screen_col_end < first_visible_virtcol)
+        or (wrap_enabled and is_first_line and char_screen_col_end <= winsaveview.skipcol)
+      then
         goto to_next_char
       end
       local columns_occupied = char_screen_col_end - char_screen_col_start + 1
@@ -214,6 +304,7 @@ M.load_base_grid = function(window, buffer)
         columns_occupied = #char
       end
 
+      local cmp = wrap_enabled and (is_first_line and winsaveview.skipcol or 0) or first_visible_virtcol - 1
       local is_tab = char == "\t"
       if is_tab or columns_occupied > 1 then
         if not is_tab then
@@ -223,33 +314,91 @@ M.load_base_grid = function(window, buffer)
             local strtrans_hl_groups = {
               -- NOTE: I thought that vim.highlight.priorities.syntax
               --   was more appropriate priority for this hl group
-              --   but any of TS capture overrides it
+              --   but any of TS captures override it
               { name = "SpecialKey", priority = 5000 },
             }
             retrieve_hl_groups(buffer, strtrans_hl_groups, lineno, virtcol)
-            -- for cindex = char_screen_col_start, char_screen_col_end do
-            for cindex = 1, columns_occupied do
-              if cindex < (first_visible_virtcol - char_screen_col_start + 1) then
+            for cindex = char_screen_col_start, char_screen_col_end do
+              if cindex <= cmp then
                 goto to_next_strtrans_char
               end
               jj = jj + 1
               if jj > window_width then
-                goto to_next_line
+                if not wrap_enabled then
+                  goto to_next_line
+                end
+                i = i + 1
+                if i > grid_height then
+                  if not is_first_line then
+                    prepare_lastlines(grid, lastline, lastline_char, lines_wrapped, wininfo.textoff)
+                  end
+                  return grid
+                end
+                jj = 1
+                lines_wrapped = lines_wrapped + 1
               end
               cell = grid[i][jj]
-              cell.char = translated_char:sub(cindex, cindex)
+              local index = cindex - char_screen_col_start + 1
+              cell.char = translated_char:sub(index, index)
               cell.hl_groups = hl_groups_copy(strtrans_hl_groups)
               ::to_next_strtrans_char::
             end
             goto to_next_char
           end
         end
+
+        if not is_tab then
+          -- NOTE: at the moment there are
+          --   at most double-wide characters
+          assert(columns_occupied == 2)
+          if wrap_enabled then
+            if window_width == 1 then
+              for row = i + 1, grid_height do
+                grid[row][1].char = ">"
+                grid[row][1].hl_groups = {
+                  {
+                    name = "NonText",
+                    priority = vim.highlight.priorities.syntax,
+                  },
+                }
+              end
+              return grid
+            elseif jj + 1 == window_width then
+              grid[i][window_width].char = ">"
+              grid[i][window_width].hl_groups = {
+                {
+                  name = "NonText",
+                  priority = vim.highlight.priorities.syntax,
+                },
+              }
+              i = i + 1
+              if i == grid_height then
+                return grid
+              end
+              jj = 0
+            end
+          end
+        end
         local replacer = is_tab and " " or "@"
         local hl_group = is_tab and "" or "WarningMsg"
-        for _ = math.max(first_visible_virtcol, char_screen_col_start), char_screen_col_end do
+        for cindex = char_screen_col_start, char_screen_col_end do
+          if cindex <= cmp then
+            goto to_next_replacer_char
+          end
           jj = jj + 1
           if jj > window_width then
-            goto to_next_line
+            if not wrap_enabled then
+              goto to_next_line
+            end
+            i = i + 1
+            if i > grid_height then
+              if not is_first_line then
+                prepare_lastlines(grid, lastline, lastline_char, lines_wrapped, wininfo.textoff)
+              end
+              return grid
+            end
+            jj = 1
+            lines_wrapped = lines_wrapped + 1
           end
           cell = grid[i][jj]
           cell.char = replacer
@@ -257,11 +406,23 @@ M.load_base_grid = function(window, buffer)
             name = hl_group,
             priority = vim.highlight.priorities.user,
           }
+          ::to_next_replacer_char::
         end
       else
         jj = jj + 1
         if jj > window_width then
-          goto to_next_line
+          if not wrap_enabled then
+            goto to_next_line
+          end
+          i = i + 1
+          if i > grid_height then
+            if not is_first_line then
+              prepare_lastlines(grid, lastline, lastline_char, lines_wrapped, wininfo.textoff)
+            end
+            return grid
+          end
+          jj = 1
+          lines_wrapped = lines_wrapped + 1
         end
         cell = grid[i][jj]
         cell.char = char

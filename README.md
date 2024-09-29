@@ -158,9 +158,10 @@ map_automaton("<leader>fml", "make_it_rain", 25)
 - [x] disable `colorcolumn`/`cursorline` for animation window
 - [ ] `listchars` support?
 - [ ] wrap support
-    - it's trickier than I thought earlier...
-        `linebreak`, `showbreak`, `breakat`, `wrapmargin`,
-        `display` - need to respect all of this settings
+    - [x] minimal support added (only respecting 'wrap', 'display' and
+        'fillchars' but not 'linebreak', 'showbreak', 'breatat' and 'wrapmargin')
+        - code is messy and ugly as hell ... need to refactor
+            this because the more I write the less I understand :)
 - [ ] fold support
 - [ ] conceal support (both old-style and extmark-based)
 - [ ] ability to also fall down numbers, folds and signs?

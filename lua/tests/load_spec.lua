@@ -13,7 +13,7 @@ local function setup_viewport(h, w, lines, ver_scroll, hor_scroll, win_options)
   vim.api.nvim_command("bufdo bwipeout!")
   vim.api.nvim_command("vsplit")
   vim.api.nvim_command("split")
-  local winid = 0
+  local winid = vim.api.nvim_get_current_win()
   local bufnr = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
   vim.api.nvim_win_set_buf(winid, bufnr)
@@ -653,15 +653,15 @@ describe("load_base_grid:", function()
     end)
 
     it("last line didn't fit, dy=truncate (textoff)", function()
-      for i = 0, 4 do
-        viewport_for_wrap_testing(3, 10 + i, {
+      for textoff = 0, 4 do
+        viewport_for_wrap_testing(3, 10 + textoff, {
           "long sentence",
           "now it's actually long",
         })
         vim.o.display = "truncate"
-        vim.wo[0].foldcolumn = tostring(i)
+        vim.wo[0].foldcolumn = tostring(textoff)
         local grid = l.load_base_grid(0, 0)
-        local expected_to_see = math.max(0, 3 - i)
+        local expected_to_see = math.max(0, 3 - textoff)
         assert.same({
           get_chars_from_grid(grid, 1),
           get_chars_from_grid(grid, 2),
@@ -690,7 +690,7 @@ describe("load_base_grid:", function()
           "1234",
           "5123",
           "4561",
-        })
+        }, "dy=" .. opt_value)
       end
     end)
 
@@ -699,8 +699,21 @@ describe("load_base_grid:", function()
         "1234123451234561234567",
       })
       local grid = l.load_base_grid(0, 0)
-      vim.cmd("normal! gg04gj")
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "1234",
+        "1234",
+        "5123",
+        "4561",
+      })
+      vim.cmd("normal! go4gj")
+      vim.cmd("redraw")
       assert.are.equal(vim.fn.winsaveview().skipcol, 4)
+      grid = l.load_base_grid(0, 0)
       assert.same({
         get_chars_from_grid(grid, 1),
         get_chars_from_grid(grid, 2),
@@ -713,7 +726,9 @@ describe("load_base_grid:", function()
         "2345",
       })
       vim.cmd("normal! gj")
+      vim.cmd("redraw")
       assert.are.equal(vim.fn.winsaveview().skipcol, 8)
+      grid = l.load_base_grid(0, 0)
       assert.same({
         get_chars_from_grid(grid, 1),
         get_chars_from_grid(grid, 2),
@@ -727,9 +742,211 @@ describe("load_base_grid:", function()
       })
     end)
 
+    it("first line didn't fit (skipcol > 0, emoji)", function()
+      viewport_for_wrap_testing(4, 4, {
+        "💣 💣 23123123123123123123",
+      })
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "@@ >",
+        "@@ 2",
+        "3123",
+        "1231",
+      })
+      vim.cmd("normal! go4gj")
+      vim.cmd("redraw")
+      assert.are.equal(vim.fn.winsaveview().skipcol, 4)
+      grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "@@ 2",
+        "3123",
+        "1231",
+        "2312",
+      })
+    end)
+
+    it("first line didn't fit (skipcol > 0, 1st char is tab, ts=4)", function()
+      viewport_for_wrap_testing(4, 4, {
+        "\t123123123123123123123",
+      })
+      vim.bo[0].tabstop = 4
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "    ",
+        "1231",
+        "2312",
+        "3123",
+      })
+      vim.cmd("normal! go4gj")
+      vim.cmd("redraw")
+      assert.are.equal(vim.fn.winsaveview().skipcol, 4)
+      grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "1231",
+        "2312",
+        "3123",
+        "1231",
+      })
+    end)
+
+    it("first line didn't fit (skipcol > 0, 2nd char is tab, ts=3)", function()
+      viewport_for_wrap_testing(4, 4, {
+        "1\t123123123123123123123",
+      })
+      vim.bo[0].tabstop = 4
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "1   ",
+        "1231",
+        "2312",
+        "3123",
+      })
+      vim.cmd("normal! go4gj")
+      vim.cmd("redraw")
+      assert.are.equal(vim.fn.winsaveview().skipcol, 4)
+      grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "1231",
+        "2312",
+        "3123",
+        "1231",
+      })
+    end)
+
+    it("first line didn't fit (skipcol > 0, 2nd char is tab, ts=4)", function()
+      viewport_for_wrap_testing(4, 4, {
+        "1\t123123123123123123123",
+      })
+      vim.bo[0].tabstop = 5
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "1   ",
+        " 123",
+        "1231",
+        "2312",
+      })
+      vim.cmd("normal! go4gj")
+      vim.cmd("redraw")
+      assert.are.equal(vim.fn.winsaveview().skipcol, 4)
+      grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        " 123",
+        "1231",
+        "2312",
+        "3123",
+      })
+    end)
+
+    it("first line didn't fit (skipcol > 0, tab, ts=5)", function()
+      viewport_for_wrap_testing(4, 4, {
+        "\t123123123123123123123",
+      })
+      vim.bo[0].tabstop = 5
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "    ",
+        " 123",
+        "1231",
+        "2312",
+      })
+      vim.cmd("normal! go3gj")
+      vim.cmd("redraw")
+      assert.are.equal(vim.fn.winsaveview().skipcol, 4)
+      grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        " 123",
+        "1231",
+        "2312",
+        "3123",
+      })
+    end)
+
+    it("first line didn't fit (skipcol > 0, strtrans)", function()
+      viewport_for_wrap_testing(4, 4, {
+        "\xef\xbf\xbf123123123123123123123",
+      })
+      local grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "<fff",
+        "f>12",
+        "3123",
+        "1231",
+      })
+      vim.cmd("normal! go4gj")
+      vim.cmd("redraw")
+      assert.are.equal(vim.fn.winsaveview().skipcol, 4)
+      grid = l.load_base_grid(0, 0)
+      assert.same({
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
+      }, {
+        "f>12",
+        "3123",
+        "1231",
+        "2312",
+      })
+    end)
+
     it("non first line didn't fit (2+ lines, dy=)", function()
       viewport_for_wrap_testing(4, 4, {
-        "ssd ",
+        "ssd",
         "abcdefghijklmnopqrst",
       }, { "dy=" })
       local grid = l.load_base_grid(0, 0)
@@ -750,7 +967,7 @@ describe("load_base_grid:", function()
       viewport_for_wrap_testing(4, 4, {
         "ssd ",
         "abcdefghijklmnopqrst",
-      }, { "dy=" })
+      }, { "dy=lastline" })
       local grid = l.load_base_grid(0, 0)
       assert.same({
         get_chars_from_grid(grid, 1),
@@ -763,6 +980,54 @@ describe("load_base_grid:", function()
         "efgh",
         "i@@@",
       })
+    end)
+
+    it("non first line didn't fit (2+ lines, width<=3)", function()
+      for _, dy in ipairs({ "lastline", "truncate" }) do
+        viewport_for_wrap_testing(4, 3, {
+          "s",
+          "abcdefghijklmnopqrst",
+        })
+        vim.o.display = dy
+        local grid = l.load_base_grid(0, 0)
+        assert.same({
+          get_chars_from_grid(grid, 1),
+          get_chars_from_grid(grid, 2),
+          get_chars_from_grid(grid, 3),
+          get_chars_from_grid(grid, 4),
+        }, {
+          "s  ",
+          "abc",
+          "def",
+          "@@@",
+        })
+        vim.api.nvim_win_set_width(0, 2)
+        grid = l.load_base_grid(0, 0)
+        assert.same({
+          get_chars_from_grid(grid, 1),
+          get_chars_from_grid(grid, 2),
+          get_chars_from_grid(grid, 3),
+          get_chars_from_grid(grid, 4),
+        }, {
+          "s ",
+          "ab",
+          "cd",
+          "@@",
+        })
+        vim.api.nvim_win_set_width(0, 1)
+        grid = l.load_base_grid(0, 0)
+        assert.same({
+          get_chars_from_grid(grid, 1),
+          get_chars_from_grid(grid, 2),
+          get_chars_from_grid(grid, 3),
+          get_chars_from_grid(grid, 4),
+        }, {
+          "s",
+          "a",
+          "b",
+          "@",
+        })
+      end
     end)
 
     it("non first line didn't fit (2+ lines, dy=truncate)", function()
