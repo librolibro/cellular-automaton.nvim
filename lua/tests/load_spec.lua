@@ -61,8 +61,8 @@ end
 ---@param cell CellularAutomatonCell
 ---@param hl_name string
 local assert_one_hl = function(cell, hl_name)
-  assert.are.equal(#cell.hl_groups, 1)
-  assert.are.same(cell.hl_groups[1].name, hl_name)
+  assert.are.equal(1, #cell.hl_groups)
+  assert.are.same(hl_name, cell.hl_groups[1].name)
 end
 
 describe("load_base_grid:", function()
@@ -366,7 +366,7 @@ describe("load_base_grid:", function()
       -- Line content will be displayed as "<ffff>A"
       -- (+ trailing spaces to be able to shift the view)
       local expected_content = "<ffff>A"
-      assert.same(#expected_content, ffff_symbol_width + 1)
+      assert.same(ffff_symbol_width + 1, #expected_content)
       setup_viewport(1, width, {
         ffff_symbol .. "A" .. string.rep(" ", width),
       }, 0, 0)
@@ -386,10 +386,10 @@ describe("load_base_grid:", function()
 
       local ffff_symbol = "\xef\xbf\xbf"
       local ffff_symbol_width = vim.fn.strdisplaywidth(ffff_symbol, 0)
-      assert.same(ffff_symbol_width, 6)
+      assert.same(6, ffff_symbol_width)
 
       local expected_content = "AB<ffff>CD"
-      assert.same(#expected_content, ffff_symbol_width + 4)
+      assert.same(ffff_symbol_width + 4, #expected_content)
       setup_viewport(1, width, {
         "AB" .. ffff_symbol .. "CD" .. string.rep(" ", width),
       }, 0, 0)
@@ -517,13 +517,13 @@ describe("load_base_grid:", function()
       vim.wo[0].wrap = false
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-      }, {
         "long sente",
         "longenough",
         "          ",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
       })
     end)
 
@@ -534,13 +534,13 @@ describe("load_base_grid:", function()
       })
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-      }, {
         "long sente",
         "nce       ",
         "longenough",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
       })
     end)
 
@@ -552,15 +552,15 @@ describe("load_base_grid:", function()
       )
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-        get_chars_from_grid(grid, 4),
-      }, {
         "!this line",
         " will take",
         " almost 4 ",
         "lines!    ",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
       })
     end)
 
@@ -572,13 +572,13 @@ describe("load_base_grid:", function()
       vim.o.display = "lastline"
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-      }, {
         "long sente",
         "nce       ",
         "now it'@@@",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
       })
     end)
 
@@ -591,13 +591,13 @@ describe("load_base_grid:", function()
       vim.wo[0].fillchars = "lastline:&"
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-      }, {
         "long sente",
         "nce       ",
         "now it'&&&",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
       })
     end)
 
@@ -609,13 +609,13 @@ describe("load_base_grid:", function()
       vim.o.display = ""
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-      }, {
         "long sente",
         "nce       ",
         "@         ",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
       })
     end)
 
@@ -628,13 +628,13 @@ describe("load_base_grid:", function()
       vim.wo[0].fillchars = "lastline:&"
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-      }, {
         "long sente",
         "nce       ",
         "&         ",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
       })
     end)
 
@@ -647,13 +647,13 @@ describe("load_base_grid:", function()
       vim.wo[0].foldcolumn = "1"
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-      }, {
         "long sente",
         "nce       ",
         "@         ",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
       })
     end)
 
@@ -665,13 +665,13 @@ describe("load_base_grid:", function()
       vim.o.display = "truncate"
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-      }, {
         "long sente",
         "nce       ",
         "@@@       ",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
       })
     end)
 
@@ -684,13 +684,13 @@ describe("load_base_grid:", function()
       vim.wo[0].fillchars = "lastline:&"
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-      }, {
         "long sente",
         "nce       ",
         "&&&       ",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
       })
     end)
 
@@ -705,14 +705,14 @@ describe("load_base_grid:", function()
         local grid = l.load_base_grid(0, 0)
         local expected_to_see = math.max(0, 3 - textoff)
         assert.same({
-          get_chars_from_grid(grid, 1),
-          get_chars_from_grid(grid, 2),
-          get_chars_from_grid(grid, 3),
-        }, {
           "long sente",
           "nce       ",
           string.rep("@", expected_to_see)
             .. string.rep(" ", 10 - expected_to_see),
+        }, {
+          get_chars_from_grid(grid, 1),
+          get_chars_from_grid(grid, 2),
+          get_chars_from_grid(grid, 3),
         })
       end
     end)
@@ -724,15 +724,15 @@ describe("load_base_grid:", function()
         }, { "display=" .. opt_value })
         local grid = l.load_base_grid(0, 0)
         assert.same({
-          get_chars_from_grid(grid, 1),
-          get_chars_from_grid(grid, 2),
-          get_chars_from_grid(grid, 3),
-          get_chars_from_grid(grid, 4),
-        }, {
           "1234",
           "1234",
           "5123",
           "4561",
+        }, {
+          get_chars_from_grid(grid, 1),
+          get_chars_from_grid(grid, 2),
+          get_chars_from_grid(grid, 3),
+          get_chars_from_grid(grid, 4),
         }, "dy=" .. opt_value)
       end
     end)
@@ -743,45 +743,45 @@ describe("load_base_grid:", function()
       })
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-        get_chars_from_grid(grid, 4),
-      }, {
         "1234",
         "1234",
         "5123",
         "4561",
-      })
-      vim.cmd("normal! go4gj")
-      vim.cmd("redraw")
-      assert.are.equal(vim.fn.winsaveview().skipcol, 4)
-      grid = l.load_base_grid(0, 0)
-      assert.same({
+      }, {
         get_chars_from_grid(grid, 1),
         get_chars_from_grid(grid, 2),
         get_chars_from_grid(grid, 3),
         get_chars_from_grid(grid, 4),
-      }, {
+      })
+      vim.cmd("normal! go4gj")
+      vim.cmd("redraw")
+      assert.are.equal(4, vim.fn.winsaveview().skipcol)
+      grid = l.load_base_grid(0, 0)
+      assert.same({
         "1234",
         "5123",
         "4561",
         "2345",
-      })
-      vim.cmd("normal! gj")
-      vim.cmd("redraw")
-      assert.are.equal(vim.fn.winsaveview().skipcol, 8)
-      grid = l.load_base_grid(0, 0)
-      assert.same({
+      }, {
         get_chars_from_grid(grid, 1),
         get_chars_from_grid(grid, 2),
         get_chars_from_grid(grid, 3),
         get_chars_from_grid(grid, 4),
-      }, {
+      })
+      vim.cmd("normal! gj")
+      vim.cmd("redraw")
+      assert.are.equal(8, vim.fn.winsaveview().skipcol)
+      grid = l.load_base_grid(0, 0)
+      assert.same({
         "5123",
         "4561",
         "2345",
         "67  ",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
       })
     end)
 
@@ -791,30 +791,30 @@ describe("load_base_grid:", function()
       })
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-        get_chars_from_grid(grid, 4),
-      }, {
         "@@ >",
         "@@ 2",
         "3123",
         "1231",
-      })
-      vim.cmd("normal! go4gj")
-      vim.cmd("redraw")
-      assert.are.equal(vim.fn.winsaveview().skipcol, 4)
-      grid = l.load_base_grid(0, 0)
-      assert.same({
+      }, {
         get_chars_from_grid(grid, 1),
         get_chars_from_grid(grid, 2),
         get_chars_from_grid(grid, 3),
         get_chars_from_grid(grid, 4),
-      }, {
+      })
+      vim.cmd("normal! go4gj")
+      vim.cmd("redraw")
+      assert.are.equal(4, vim.fn.winsaveview().skipcol)
+      grid = l.load_base_grid(0, 0)
+      assert.same({
         "@@ 2",
         "3123",
         "1231",
         "2312",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
       })
     end)
 
@@ -825,30 +825,30 @@ describe("load_base_grid:", function()
       vim.bo[0].tabstop = 4
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-        get_chars_from_grid(grid, 4),
-      }, {
         "    ",
         "1231",
         "2312",
         "3123",
-      })
-      vim.cmd("normal! go4gj")
-      vim.cmd("redraw")
-      assert.are.equal(vim.fn.winsaveview().skipcol, 4)
-      grid = l.load_base_grid(0, 0)
-      assert.same({
+      }, {
         get_chars_from_grid(grid, 1),
         get_chars_from_grid(grid, 2),
         get_chars_from_grid(grid, 3),
         get_chars_from_grid(grid, 4),
-      }, {
+      })
+      vim.cmd("normal! go4gj")
+      vim.cmd("redraw")
+      assert.are.equal(4, vim.fn.winsaveview().skipcol)
+      grid = l.load_base_grid(0, 0)
+      assert.same({
         "1231",
         "2312",
         "3123",
         "1231",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
       })
     end)
 
@@ -859,30 +859,30 @@ describe("load_base_grid:", function()
       vim.bo[0].tabstop = 4
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-        get_chars_from_grid(grid, 4),
-      }, {
         "1   ",
         "1231",
         "2312",
         "3123",
-      })
-      vim.cmd("normal! go4gj")
-      vim.cmd("redraw")
-      assert.are.equal(vim.fn.winsaveview().skipcol, 4)
-      grid = l.load_base_grid(0, 0)
-      assert.same({
+      }, {
         get_chars_from_grid(grid, 1),
         get_chars_from_grid(grid, 2),
         get_chars_from_grid(grid, 3),
         get_chars_from_grid(grid, 4),
-      }, {
+      })
+      vim.cmd("normal! go4gj")
+      vim.cmd("redraw")
+      assert.are.equal(4, vim.fn.winsaveview().skipcol)
+      grid = l.load_base_grid(0, 0)
+      assert.same({
         "1231",
         "2312",
         "3123",
         "1231",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
       })
     end)
 
@@ -893,30 +893,30 @@ describe("load_base_grid:", function()
       vim.bo[0].tabstop = 5
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-        get_chars_from_grid(grid, 4),
-      }, {
         "1   ",
         " 123",
         "1231",
         "2312",
-      })
-      vim.cmd("normal! go4gj")
-      vim.cmd("redraw")
-      assert.are.equal(vim.fn.winsaveview().skipcol, 4)
-      grid = l.load_base_grid(0, 0)
-      assert.same({
+      }, {
         get_chars_from_grid(grid, 1),
         get_chars_from_grid(grid, 2),
         get_chars_from_grid(grid, 3),
         get_chars_from_grid(grid, 4),
-      }, {
+      })
+      vim.cmd("normal! go4gj")
+      vim.cmd("redraw")
+      assert.are.equal(4, vim.fn.winsaveview().skipcol)
+      grid = l.load_base_grid(0, 0)
+      assert.same({
         " 123",
         "1231",
         "2312",
         "3123",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
       })
     end)
 
@@ -927,30 +927,30 @@ describe("load_base_grid:", function()
       vim.bo[0].tabstop = 5
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-        get_chars_from_grid(grid, 4),
-      }, {
         "    ",
         " 123",
         "1231",
         "2312",
-      })
-      vim.cmd("normal! go3gj")
-      vim.cmd("redraw")
-      assert.are.equal(vim.fn.winsaveview().skipcol, 4)
-      grid = l.load_base_grid(0, 0)
-      assert.same({
+      }, {
         get_chars_from_grid(grid, 1),
         get_chars_from_grid(grid, 2),
         get_chars_from_grid(grid, 3),
         get_chars_from_grid(grid, 4),
-      }, {
+      })
+      vim.cmd("normal! go3gj")
+      vim.cmd("redraw")
+      assert.are.equal(4, vim.fn.winsaveview().skipcol)
+      grid = l.load_base_grid(0, 0)
+      assert.same({
         " 123",
         "1231",
         "2312",
         "3123",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
       })
     end)
 
@@ -960,30 +960,30 @@ describe("load_base_grid:", function()
       })
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-        get_chars_from_grid(grid, 4),
-      }, {
         "<fff",
         "f>12",
         "3123",
         "1231",
-      })
-      vim.cmd("normal! go4gj")
-      vim.cmd("redraw")
-      assert.are.equal(vim.fn.winsaveview().skipcol, 4)
-      grid = l.load_base_grid(0, 0)
-      assert.same({
+      }, {
         get_chars_from_grid(grid, 1),
         get_chars_from_grid(grid, 2),
         get_chars_from_grid(grid, 3),
         get_chars_from_grid(grid, 4),
-      }, {
+      })
+      vim.cmd("normal! go4gj")
+      vim.cmd("redraw")
+      assert.are.equal(4, vim.fn.winsaveview().skipcol)
+      grid = l.load_base_grid(0, 0)
+      assert.same({
         "f>12",
         "3123",
         "1231",
         "2312",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
       })
     end)
 
@@ -994,15 +994,15 @@ describe("load_base_grid:", function()
       }, { "dy=" })
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-        get_chars_from_grid(grid, 4),
-      }, {
         "ssd ",
         "@   ",
         "@   ",
         "@   ",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
       })
     end)
 
@@ -1013,15 +1013,15 @@ describe("load_base_grid:", function()
       }, { "dy=lastline" })
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-        get_chars_from_grid(grid, 4),
-      }, {
         "ssd ",
         "abcd",
         "efgh",
         "i@@@",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
       })
     end)
 
@@ -1034,41 +1034,36 @@ describe("load_base_grid:", function()
         vim.o.display = dy
         local grid = l.load_base_grid(0, 0)
         assert.same({
-          get_chars_from_grid(grid, 1),
-          get_chars_from_grid(grid, 2),
-          get_chars_from_grid(grid, 3),
-          get_chars_from_grid(grid, 4),
-        }, {
           "s  ",
           "abc",
           "def",
           "@@@",
+        }, {
+          get_chars_from_grid(grid, 1),
+          get_chars_from_grid(grid, 2),
+          get_chars_from_grid(grid, 3),
+          get_chars_from_grid(grid, 4),
         })
         vim.api.nvim_win_set_width(0, 2)
         grid = l.load_base_grid(0, 0)
         assert.same({
-          get_chars_from_grid(grid, 1),
-          get_chars_from_grid(grid, 2),
-          get_chars_from_grid(grid, 3),
-          get_chars_from_grid(grid, 4),
-        }, {
           "s ",
           "ab",
           "cd",
           "@@",
-        })
-        vim.api.nvim_win_set_width(0, 1)
-        grid = l.load_base_grid(0, 0)
-        assert.same({
+        }, {
           get_chars_from_grid(grid, 1),
           get_chars_from_grid(grid, 2),
           get_chars_from_grid(grid, 3),
           get_chars_from_grid(grid, 4),
-        }, {
-          "s",
-          "a",
-          "b",
-          "@",
+        })
+        vim.api.nvim_win_set_width(0, 1)
+        grid = l.load_base_grid(0, 0)
+        assert.same({ "s", "a", "b", "@" }, {
+          get_chars_from_grid(grid, 1),
+          get_chars_from_grid(grid, 2),
+          get_chars_from_grid(grid, 3),
+          get_chars_from_grid(grid, 4),
         })
       end
     end)
@@ -1085,15 +1080,15 @@ describe("load_base_grid:", function()
         local grid = l.load_base_grid(0, 0)
         local nchars = math.max(0, 3 - textoff)
         assert.same({
-          get_chars_from_grid(grid, 1),
-          get_chars_from_grid(grid, 2),
-          get_chars_from_grid(grid, 3),
-          get_chars_from_grid(grid, 4),
-        }, {
           "ssd ",
           "abcd",
           "efgh",
           string.rep("@", nchars) .. string.rep(" ", 4 - nchars),
+        }, {
+          get_chars_from_grid(grid, 1),
+          get_chars_from_grid(grid, 2),
+          get_chars_from_grid(grid, 3),
+          get_chars_from_grid(grid, 4),
         })
       end
     end)
@@ -1105,13 +1100,13 @@ describe("load_base_grid:", function()
       })
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-      }, {
         "emoji:    >",
         "@@ ...     ",
         "thatonefits",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
       })
     end)
 
@@ -1122,7 +1117,7 @@ describe("load_base_grid:", function()
         { "a 💣 and some text, doesn't matter" }
       )
       local grid = l.load_base_grid(0, 0)
-      assert.same({
+      assert.same({ "a", " ", ">", ">", ">", ">", ">", ">" }, {
         get_chars_from_grid(grid, 1),
         get_chars_from_grid(grid, 2),
         get_chars_from_grid(grid, 3),
@@ -1131,15 +1126,6 @@ describe("load_base_grid:", function()
         get_chars_from_grid(grid, 6),
         get_chars_from_grid(grid, 7),
         get_chars_from_grid(grid, 8),
-      }, {
-        "a",
-        " ",
-        ">",
-        ">",
-        ">",
-        ">",
-        ">",
-        ">",
       })
     end)
 
@@ -1150,15 +1136,15 @@ describe("load_base_grid:", function()
       })
       local grid = l.load_base_grid(0, 0)
       assert.same({
-        get_chars_from_grid(grid, 1),
-        get_chars_from_grid(grid, 2),
-        get_chars_from_grid(grid, 3),
-        get_chars_from_grid(grid, 4),
-      }, {
         "123456<fff",
         "f>blabla  ",
         "123456789^",
         "Ablablabla",
+      }, {
+        get_chars_from_grid(grid, 1),
+        get_chars_from_grid(grid, 2),
+        get_chars_from_grid(grid, 3),
+        get_chars_from_grid(grid, 4),
       })
     end)
   end)

@@ -60,7 +60,7 @@ end
 M.assert_grid_same = function(grid, pattern, error_msg)
   local got = "\n" .. convert_grid_to_string(grid) .. "\n"
   local expected = "\n" .. table.concat(pattern, "\n") .. "\n"
-  assert.are.same(replace_spaces(got), replace_spaces(expected), error_msg)
+  assert.are.same(replace_spaces(expected), replace_spaces(got), error_msg)
 end
 
 ---@param grid CellularAutomatonCell[][]
@@ -69,7 +69,7 @@ end
 M.assert_grid_different = function(grid, pattern, error_msg)
   local got = "\n" .. convert_grid_to_string(grid) .. "\n"
   local expected = "\n" .. table.concat(pattern, "\n") .. "\n"
-  assert.are.not_.same(replace_spaces(got), replace_spaces(expected), error_msg)
+  assert.are.not_.same(replace_spaces(expected), replace_spaces(got), error_msg)
 end
 
 return M

@@ -96,7 +96,7 @@ describe("make_it_rain:", function()
         })
         grid[1][2].disperse_direction = -1
         m:update(grid)
-        assert.are.equal(grid[1][2].disperse_direction, 1)
+        assert.are.equal(1, grid[1][2].disperse_direction)
       end
     )
   end)
@@ -172,7 +172,7 @@ describe("make_it_rain:", function()
         })
         grid[1][2].disperse_direction = -1
         m:update(grid)
-        assert.are.equal(grid[1][2].disperse_direction, 1)
+        assert.are.equal(1, grid[1][2].disperse_direction)
       end
     )
   end)
