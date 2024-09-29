@@ -71,19 +71,19 @@ end
 
 ---@param grid CellularAutomatonCell[][]
 ---@return boolean
-M.update = function(grid)
+function M:update(grid)
   local reference = vim.deepcopy(grid)
   local was_state_updated = false
   for i = 1, #grid do
     for j = 1, #grid[i] do
       local n = count_neighbours(reference, i, j)
       if is_cell_alive(reference, i, j) then
-        if n >= M.overpopultion_thr or n <= M.underpopulation_thr then
+        if n >= self.overpopultion_thr or n <= self.underpopulation_thr then
           kill_cell(grid, i, j)
           was_state_updated = true
         end
       else
-        if n == M.respawn_condition then
+        if n == self.respawn_condition then
           respawn_cell(grid, reference, i, j)
           was_state_updated = true
         end
