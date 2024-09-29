@@ -16,35 +16,36 @@ local scramble_word = function(word)
   return chars
 end
 
----@type CellularAutomatonConfig
 local M = {
   name = "",
   fps = 30,
-  ---@param grid CellularAutomatonCell[][]
-  ---@return boolean
-  update = function(grid)
-    for i = 1, #grid do
-      local scrambled = {}
-      local word = {}
-      for j = 1, #grid[i] do
-        local c = grid[i][j]
-        if not is_alphanumeric(c.char) then
-          if #word ~= 0 then
-            for _, d in pairs(scramble_word(word)) do
-              table.insert(scrambled, d)
-            end
-            word = {}
-          end
-          table.insert(scrambled, c)
-        else
-          table.insert(word, c)
-        end
-      end
-
-      grid[i] = scrambled
-    end
-    return true
-  end,
 }
 
+---@param grid CellularAutomatonCell[][]
+---@return boolean
+function M:update(grid)
+  for i = 1, #grid do
+    local scrambled = {}
+    local word = {}
+    for j = 1, #grid[i] do
+      local c = grid[i][j]
+      if not is_alphanumeric(c.char) then
+        if #word ~= 0 then
+          for _, d in pairs(scramble_word(word)) do
+            table.insert(scrambled, d)
+          end
+          word = {}
+        end
+        table.insert(scrambled, c)
+      else
+        table.insert(word, c)
+      end
+    end
+
+    grid[i] = scrambled
+  end
+  return true
+end
+
+---@cast M CellularAutomatonConfig
 return M
