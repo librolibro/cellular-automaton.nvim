@@ -20,7 +20,8 @@ end
 
 ---@param name string
 local register_builtin_animation = function(name)
-  local cfg = assert(require(string.format("cellular-automaton.animations.%s", name)))
+  local cfg =
+    assert(require(string.format("cellular-automaton.animations.%s", name)))
   if not cfg.name or cfg.name == "" then
     cfg.name = name
   end
@@ -36,7 +37,11 @@ register_builtin_animation("scramble")
 M.start_animation = function(name, winid)
   -- Make sure animaiton exists
   if M.animations[name] == nil then
-    error("Error while starting an animation. Unknown cellular-automaton animation: " .. name)
+    error(
+      "Error while starting an animation."
+        .. " Unknown cellular-automaton animation: "
+        .. name
+    )
   end
 
   if winid == nil or winid == 0 then

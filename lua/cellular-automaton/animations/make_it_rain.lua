@@ -151,7 +151,9 @@ function M:update(grid)
         was_state_updated = true
       else
         -- or to the side
-        local disperse_direction = cell.disperse_direction or ({ -1, 1 })[math.random(1, 2)]
+        local disperse_direction = (
+          cell.disperse_direction or ({ -1, 1 })[math.random(1, 2)]
+        )
         local last_pos = { x0, y0 }
         for d = 1, self.disperse_rate do
           local y = y0 + disperse_direction * d

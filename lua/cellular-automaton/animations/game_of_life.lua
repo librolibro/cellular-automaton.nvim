@@ -16,7 +16,13 @@ local M = {
 ---@param y integer
 ---@return boolean
 local function is_cell_alive(grid, x, y)
-  return x > 0 and x <= #grid and y > 0 and y <= #grid[x] and grid[x][y].char ~= " "
+  return (
+    x > 0
+    and x <= #grid
+    and y > 0
+    and y <= #grid[x]
+    and grid[x][y].char ~= " "
+  )
 end
 
 ---@param grid CellularAutomatonCell[][]

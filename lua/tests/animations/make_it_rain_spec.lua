@@ -87,15 +87,18 @@ describe("make_it_rain:", function()
       end
     end)
 
-    it("switches disperse_direction to right if was blocked horizontally", function()
-      local grid = init_grid({
-        "#x ",
-        "###",
-      })
-      grid[1][2].disperse_direction = -1
-      m:update(grid)
-      assert.are.equal(grid[1][2].disperse_direction, 1)
-    end)
+    it(
+      "switches disperse_direction to right if was blocked horizontally",
+      function()
+        local grid = init_grid({
+          "#x ",
+          "###",
+        })
+        grid[1][2].disperse_direction = -1
+        m:update(grid)
+        assert.are.equal(grid[1][2].disperse_direction, 1)
+      end
+    )
   end)
 
   describe("cell with left disperse direction behaviour", function()
@@ -160,26 +163,32 @@ describe("make_it_rain:", function()
       end
     end)
 
-    it("switches disperse_direction to right if was blocked horizontally", function()
-      local grid = init_grid({
-        "#x ",
-        "###",
-      })
-      grid[1][2].disperse_direction = -1
-      m:update(grid)
-      assert.are.equal(grid[1][2].disperse_direction, 1)
-    end)
+    it(
+      "switches disperse_direction to right if was blocked horizontally",
+      function()
+        local grid = init_grid({
+          "#x ",
+          "###",
+        })
+        grid[1][2].disperse_direction = -1
+        m:update(grid)
+        assert.are.equal(grid[1][2].disperse_direction, 1)
+      end
+    )
   end)
 
-  it("cell with nil disperse direction falls to randomly chosen side", function()
-    local grid = init_grid({
-      " x ",
-      " # ",
-    })
-    m:update(grid)
-    c.assert_grid_different(grid, {
-      " x ",
-      " # ",
-    })
-  end)
+  it(
+    "cell with nil disperse direction falls to randomly chosen side",
+    function()
+      local grid = init_grid({
+        " x ",
+        " # ",
+      })
+      m:update(grid)
+      c.assert_grid_different(grid, {
+        " x ",
+        " # ",
+      })
+    end
+  )
 end)

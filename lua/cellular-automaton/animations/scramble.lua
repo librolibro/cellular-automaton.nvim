@@ -1,7 +1,11 @@
 ---@param c string
 ---@return boolean
 local function is_alphanumeric(c)
-  return c >= "a" and c <= "z" or c >= "A" and c <= "Z" or c >= "0" and c <= "9"
+  return (
+    c >= "a" and c <= "z"
+    or c >= "A" and c <= "Z"
+    or c >= "0" and c <= "9"
+  )
 end
 
 ---@param word string[]

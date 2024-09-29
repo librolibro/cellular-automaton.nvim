@@ -21,8 +21,15 @@ local hl_groups_copy = function(hl_groups)
   return new_table
 end
 
---- table<priority, {total: amount_of_hls_with_this_priority, current_offset: current_offset}>
----@alias _CA_PriorityCounters table<integer, {total: integer, current_offset: integer}>
+---@class _CA_PCounter
+---
+--- Amount of highlight groups with this priority
+---@field total integer
+---
+--- Current offset
+---@field current_offset integer
+
+---@alias _CA_PriorityCounters table<integer, _CA_PCounter>
 
 ---@param name string
 ---@param priority integer
@@ -96,9 +103,11 @@ local retrieve_hl_groups = function(buffer, hl_groups, i, j)
     )
   end
 
-  -- Tricky part now ... We need to make all priority values unique and also save their order
-  -- (see https://github.com/nvim-treesitter/nvim-treesitter-context/blob/e6cc783b74606d97ca9eff6494e3f5c2ca603a50/lua/treesitter-context/render.lua#L167
-  -- if you want to know why it's important for extmark-based highlighting reproducing)
+  -- Tricky part now ... We need to make all
+  -- priority values unique and also save their
+  -- order (see nvim-treesitter-context projects,
+  -- lua/treesitter-context/render.lua#L167 if you want to know why
+  -- it's important for extmark-based highlighting reproducing)
 
   for _, hl_group in ipairs(hl_groups) do
     local orig_priority = hl_group.priority
@@ -154,7 +163,13 @@ end
 ---@param lastline_char string
 ---@param lines_wrapped integer
 ---@param textoff integer
-local prepare_lastlines = function(grid, lastline, lastline_char, lines_wrapped, textoff)
+local prepare_lastlines = function(
+  grid,
+  lastline,
+  lastline_char,
+  lines_wrapped,
+  textoff
+)
   local grid_height = #grid
   local grid_width = #grid[1]
 
@@ -243,7 +258,8 @@ M.load_base_grid = function(window, buffer)
       grid[i][j] = { char = " ", hl_groups = {} }
     end
   end
-  local data = vim.api.nvim_buf_get_lines(buffer, first_lineno, last_lineno, false)
+  local data =
+    vim.api.nvim_buf_get_lines(buffer, first_lineno, last_lineno, false)
 
   -- update with buffer data
   local i = 0
@@ -269,7 +285,10 @@ M.load_base_grid = function(window, buffer)
         lineno,
         virtcol,
       }, 1, window))
-      if char_screen_col_start == 0 or (not wrap_enabled and char_screen_col_start > last_visible_virtcol) then
+      if
+        char_screen_col_start == 0
+        or (not wrap_enabled and char_screen_col_start > last_visible_virtcol)
+      then
         break
       end
 
@@ -284,7 +303,11 @@ M.load_base_grid = function(window, buffer)
 
       if
         (not wrap_enabled and char_screen_col_end < first_visible_virtcol)
-        or (wrap_enabled and is_first_line and char_screen_col_end <= winsaveview.skipcol)
+        or (
+          wrap_enabled
+          and is_first_line
+          and char_screen_col_end <= winsaveview.skipcol
+        )
       then
         goto to_next_char
       end
@@ -304,7 +327,10 @@ M.load_base_grid = function(window, buffer)
         columns_occupied = #char
       end
 
-      local cmp = wrap_enabled and (is_first_line and winsaveview.skipcol or 0) or first_visible_virtcol - 1
+      local cmp = (
+        wrap_enabled and (is_first_line and winsaveview.skipcol or 0)
+        or first_visible_virtcol - 1
+      )
       local is_tab = char == "\t"
       if is_tab or columns_occupied > 1 then
         if not is_tab then
@@ -330,7 +356,13 @@ M.load_base_grid = function(window, buffer)
                 i = i + 1
                 if i > grid_height then
                   if not is_first_line then
-                    prepare_lastlines(grid, lastline, lastline_char, lines_wrapped, wininfo.textoff)
+                    prepare_lastlines(
+                      grid,
+                      lastline,
+                      lastline_char,
+                      lines_wrapped,
+                      wininfo.textoff
+                    )
                   end
                   return grid
                 end
@@ -393,7 +425,13 @@ M.load_base_grid = function(window, buffer)
             i = i + 1
             if i > grid_height then
               if not is_first_line then
-                prepare_lastlines(grid, lastline, lastline_char, lines_wrapped, wininfo.textoff)
+                prepare_lastlines(
+                  grid,
+                  lastline,
+                  lastline_char,
+                  lines_wrapped,
+                  wininfo.textoff
+                )
               end
               return grid
             end
@@ -417,7 +455,13 @@ M.load_base_grid = function(window, buffer)
           i = i + 1
           if i > grid_height then
             if not is_first_line then
-              prepare_lastlines(grid, lastline, lastline_char, lines_wrapped, wininfo.textoff)
+              prepare_lastlines(
+                grid,
+                lastline,
+                lastline_char,
+                lines_wrapped,
+                wininfo.textoff
+              )
             end
             return grid
           end

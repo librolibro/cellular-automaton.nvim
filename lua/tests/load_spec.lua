@@ -139,7 +139,14 @@ describe("load_base_grid:", function()
       for idx, case in ipairs(window_option_cases) do
         local width = 10
         local height = 3
-        setup_viewport(height, width, { "1", "2", "3", "4", "5" }, 0, 0, case.options)
+        setup_viewport(
+          height,
+          width,
+          { "1", "2", "3", "4", "5" },
+          0,
+          0,
+          case.options
+        )
         local grid = l.load_base_grid(0, 0)
         assert.equals(height, #grid, idx)
         assert.equals(width - case.side_col_width, #grid[1], idx)
@@ -151,7 +158,14 @@ describe("load_base_grid:", function()
       for idx, case in ipairs(window_option_cases) do
         local width = 10
         local height = 3
-        setup_viewport(height, width, { "1", "2", "3", "4", "5" }, 2, 0, case.options)
+        setup_viewport(
+          height,
+          width,
+          { "1", "2", "3", "4", "5" },
+          2,
+          0,
+          case.options
+        )
         local grid = l.load_base_grid(0, 0)
         assert.equals(height, #grid, idx)
         assert.equals(width - case.side_col_width, #grid[1], idx)
@@ -174,33 +188,48 @@ describe("load_base_grid:", function()
   end)
 
   describe("multicell chars:", function()
-    it("multi-byte but one-cell chars can entirely fit it *char* field", function()
-      local width = 10
-      local height = 10
-      -- E.g. cyrillic symbols occupies one
-      -- cell but contains of several bytes,
-      -- also some math symbols, dyacritics etc.
-      -- NOTE: Lines 1 and 2 are equal
-      setup_viewport(height, width, { "\xce\xa9\xc3\x85", "ΩÅ", "ｶ¼аꜳ" }, 0, 0)
-      local grid = l.load_base_grid(0, 0)
+    it(
+      "multi-byte but one-cell chars can entirely fit it *char* field",
+      function()
+        local width = 10
+        local height = 10
+        -- E.g. cyrillic symbols occupies one
+        -- cell but contains of several bytes,
+        -- also some math symbols, dyacritics etc.
+        -- NOTE: Lines 1 and 2 are equal
+        setup_viewport(
+          height,
+          width,
+          { "\xce\xa9\xc3\x85", "ΩÅ", "ｶ¼аꜳ" },
+          0,
+          0
+        )
+        local grid = l.load_base_grid(0, 0)
 
-      assert.same("Ω", grid[1][1].char)
-      assert.same("Å", grid[1][2].char)
+        assert.same("Ω", grid[1][1].char)
+        assert.same("Å", grid[1][2].char)
 
-      assert.same("Ω", grid[2][1].char)
-      assert.same("Å", grid[2][2].char)
+        assert.same("Ω", grid[2][1].char)
+        assert.same("Å", grid[2][2].char)
 
-      assert.same("ｶ", grid[3][1].char)
-      assert.same("¼", grid[3][2].char)
-      assert.same("а", grid[3][3].char)
-      assert.same("ꜳ", grid[3][4].char)
-    end)
+        assert.same("ｶ", grid[3][1].char)
+        assert.same("¼", grid[3][2].char)
+        assert.same("а", grid[3][3].char)
+        assert.same("ꜳ", grid[3][4].char)
+      end
+    )
     it("one-/multi-byte and multicell chars should be replaced", function()
       local width = 10
       local height = 10
 
       -- Emojis, chinese/korean/japanese hyeroglyphs and lot more ...
-      setup_viewport(height, width, { "💤", "諺文", "한글", "ハン" }, 0, 0)
+      setup_viewport(
+        height,
+        width,
+        { "💤", "諺文", "한글", "ハン" },
+        0,
+        0
+      )
 
       local grid = l.load_base_grid(0, 0)
 
@@ -262,34 +291,43 @@ describe("load_base_grid:", function()
         grid = l.load_base_grid(0, bufnr)
         assert.truthy(#grid[1] >= (ts + 1))
 
-        assert.same(string.rep(" ", ts) .. "A", get_chars_from_grid(grid, 1, 1, ts + 1), ts_opt)
-      end
-    end)
-    it("tabs should be replaced (in the middle of the string + 'softtabstop')", function()
-      local width = 19
-
-      local ts = 16
-      local ts_opts = { "ts=" .. tostring(ts), "sts=" .. tostring(ts) }
-      local ts_opts_str = vim.inspect(ts_opts)
-      local grid
-
-      for shift_symbols = 0, ts - 1 do
-        -- Each asterisk will "shrink" the tab symbol more
-        -- and more since 'softtabstop' was set for the buffer
-        setup_viewport(1, width, {
-          string.rep("*", shift_symbols) .. "\tA",
-        }, 0, 0, ts_opts)
-
-        grid = l.load_base_grid(0, 0)
-        assert.truthy(#grid[1] >= (ts + 1))
-
         assert.same(
-          string.rep("*", shift_symbols) .. string.rep(" ", ts - shift_symbols) .. "A",
+          string.rep(" ", ts) .. "A",
           get_chars_from_grid(grid, 1, 1, ts + 1),
-          ts_opts_str .. ", shift_symbols=" .. tostring(shift_symbols)
+          ts_opt
         )
       end
     end)
+    it(
+      "tabs should be replaced (in the middle of the string + 'softtabstop')",
+      function()
+        local width = 19
+
+        local ts = 16
+        local ts_opts = { "ts=" .. tostring(ts), "sts=" .. tostring(ts) }
+        local ts_opts_str = vim.inspect(ts_opts)
+        local grid
+
+        for shift_symbols = 0, ts - 1 do
+          -- Each asterisk will "shrink" the tab symbol more
+          -- and more since 'softtabstop' was set for the buffer
+          setup_viewport(1, width, {
+            string.rep("*", shift_symbols) .. "\tA",
+          }, 0, 0, ts_opts)
+
+          grid = l.load_base_grid(0, 0)
+          assert.truthy(#grid[1] >= (ts + 1))
+
+          assert.same(
+            string.rep("*", shift_symbols)
+              .. string.rep(" ", ts - shift_symbols)
+              .. "A",
+            get_chars_from_grid(grid, 1, 1, ts + 1),
+            ts_opts_str .. ", shift_symbols=" .. tostring(shift_symbols)
+          )
+        end
+      end
+    )
     it("tabs should be replaced (tabstop + hscroll)", function()
       local width = 17
       local ts = 16
@@ -507,7 +545,11 @@ describe("load_base_grid:", function()
     end)
 
     it("big wrapping", function()
-      viewport_for_wrap_testing(4, 10, { "!this line will take almost 4 lines!" })
+      viewport_for_wrap_testing(
+        4,
+        10,
+        { "!this line will take almost 4 lines!" }
+      )
       local grid = l.load_base_grid(0, 0)
       assert.same({
         get_chars_from_grid(grid, 1),
@@ -669,7 +711,8 @@ describe("load_base_grid:", function()
         }, {
           "long sente",
           "nce       ",
-          string.rep("@", expected_to_see) .. string.rep(" ", 10 - expected_to_see),
+          string.rep("@", expected_to_see)
+            .. string.rep(" ", 10 - expected_to_see),
         })
       end
     end)
@@ -1073,7 +1116,11 @@ describe("load_base_grid:", function()
     end)
 
     it("double-wide character that will never fit", function()
-      viewport_for_wrap_testing(8, 1, { "a 💣 and some text, doesn't matter" })
+      viewport_for_wrap_testing(
+        8,
+        1,
+        { "a 💣 and some text, doesn't matter" }
+      )
       local grid = l.load_base_grid(0, 0)
       assert.same({
         get_chars_from_grid(grid, 1),

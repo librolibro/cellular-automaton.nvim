@@ -76,7 +76,11 @@ local function setup_cleaning(ctx)
       do
         -- If any of the non-floating windows changed its size (or
         -- this exact floating window itself) then stop the animation
-        if not common.is_floating(winid) or winid == ctx.host_winid or winid == ctx.winid then
+        if
+          not common.is_floating(winid)
+          or winid == ctx.host_winid
+          or winid == ctx.winid
+        then
           require("cellular-automaton.manager").clean(ctx, event_data)
           return
         end
@@ -120,8 +124,13 @@ M.execute_animation = function(cfg, host_winid)
     error(string.format("winid=%d is not on the current tabpage", host_winid))
   end
   -- only one animation per window supported
-  if M._running_animations[host_winid] and not M._running_animations[host_winid].interrupted then
-    error("There is already running animation for winid=" .. tostring(host_winid))
+  if
+    M._running_animations[host_winid]
+    and not M._running_animations[host_winid].interrupted
+  then
+    error(
+      "There is already running animation for winid=" .. tostring(host_winid)
+    )
   end
   -- animations for animation windows are also not supported
   -- TODO: maybe transform them (possibly to
@@ -131,10 +140,17 @@ M.execute_animation = function(cfg, host_winid)
     if ctx.interrupted then
       M._running_animations[k] = nil
     elseif ctx.winid == host_winid then
-      error(string.format("You want to run an animation for winid=%d which is already an animation window", host_winid))
+      error(
+        string.format(
+          "You want to run an animation for winid=%d"
+            .. " which is already an animation window",
+          host_winid
+        )
+      )
     end
   end
-  -- creating and preparing floating window and buffers for the future animation
+  -- creating and preparing floating window
+  -- and buffers for the future animation
   local host_bufnr = vim.api.nvim_win_get_buf(host_winid)
   local winid, buffers = ui.prepare_window_and_buffers(host_winid)
   -- creating animation context

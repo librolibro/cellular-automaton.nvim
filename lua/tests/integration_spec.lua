@@ -45,9 +45,12 @@ describe("integration", function()
     vim.cmd("CellularAutomaton make_it_rain")
   end)
 
-  it("'list' window option is turned off to prevent marking trailing spaces", function()
-    vim.cmd("set list")
-    vim.cmd("CellularAutomaton make_it_rain")
-    assert.is_false(vim.wo[0].list)
-  end)
+  it(
+    "'list' window option is turned off to prevent marking trailing spaces",
+    function()
+      vim.cmd("set list")
+      vim.cmd("CellularAutomaton make_it_rain")
+      assert.is_false(vim.wo[0].list)
+    end
+  )
 end)

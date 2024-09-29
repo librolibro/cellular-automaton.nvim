@@ -44,7 +44,9 @@ local configure_window = function(winid, wininfo)
         scl_width = scl_width - 1
       end
       local scl = scl_width / 2
-      vim.wo[winid].signcolumn = scl > 0 and string.format("yes:%d", scl) or "no"
+      vim.wo[winid].signcolumn = (
+        scl > 0 and string.format("yes:%d", scl) or "no"
+      )
       textoff_left = textoff_left - scl_width
     else
       vim.wo[winid].signcolumn = "no"
@@ -59,7 +61,13 @@ local configure_window = function(winid, wininfo)
     end
 
     if textoff_left > 0 then
-      error(string.format("textoff_left=%d (textoff=%d)", textoff_left, wininfo.textoff))
+      error(
+        string.format(
+          "textoff_left=%d (textoff=%d)",
+          textoff_left,
+          wininfo.textoff
+        )
+      )
     end
   end
 
