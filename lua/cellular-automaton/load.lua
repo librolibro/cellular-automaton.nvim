@@ -262,16 +262,16 @@ M.load_base_grid = function(window, buffer)
     vim.api.nvim_buf_get_lines(buffer, first_lineno, last_lineno, false)
 
   -- update with buffer data
-  local i = 0
+  local grid_row = 0
   for line_offset, line in ipairs(data) do
-    local jj = 0
-    local col = 0
-    local virtcol = 0
+    local grid_col = 0
+    local char_index = 0
+    local screen_col = 0
     local lineno = first_lineno + line_offset
     local is_first_line = line_offset == 1
     local lines_wrapped = 0
-    i = i + 1
-    if i > grid_height then
+    grid_row = grid_row + 1
+    if grid_row > grid_height then
       break
     end
 
@@ -279,12 +279,10 @@ M.load_base_grid = function(window, buffer)
     local cell, char_screen_col_start, char_screen_col_end
 
     while true do
-      col = col + 1
-      virtcol = virtcol + 1
-      char_screen_col_start, char_screen_col_end = unpack(vim.fn.virtcol({
-        lineno,
-        virtcol,
-      }, 1, window))
+      char_index = char_index + 1
+      screen_col = screen_col + 1
+      char_screen_col_start, char_screen_col_end =
+        unpack(vim.fn.virtcol({ lineno, screen_col }, 1, window))
       if
         char_screen_col_start == 0
         or (not wrap_enabled and char_screen_col_start > last_visible_virtcol)
@@ -295,11 +293,11 @@ M.load_base_grid = function(window, buffer)
       -- TODO: Make 2 strcharpart() calls (with *skipcc* and without it)
       --   in order to remove all non-leading VS-15/VS-16 chars?
       ---@type string
-      local char = vim.fn.strcharpart(line, col - 1, 1, 1)
+      local char = vim.fn.strcharpart(line, char_index - 1, 1, 1)
       if char == "" then
         break
       end
-      virtcol = virtcol + #char - 1
+      screen_col = screen_col + #char - 1
 
       if
         (not wrap_enabled and char_screen_col_end < first_visible_virtcol)
@@ -327,7 +325,7 @@ M.load_base_grid = function(window, buffer)
         columns_occupied = #char
       end
 
-      local cmp = (
+      local cindex_lower_bound = (
         wrap_enabled and (is_first_line and winsaveview.skipcol or 0)
         or first_visible_virtcol - 1
       )
@@ -343,18 +341,18 @@ M.load_base_grid = function(window, buffer)
               --   but any of TS captures override it
               { name = "SpecialKey", priority = 5000 },
             }
-            retrieve_hl_groups(buffer, strtrans_hl_groups, lineno, virtcol)
+            retrieve_hl_groups(buffer, strtrans_hl_groups, lineno, screen_col)
             for cindex = char_screen_col_start, char_screen_col_end do
-              if cindex <= cmp then
+              if cindex <= cindex_lower_bound then
                 goto to_next_strtrans_char
               end
-              jj = jj + 1
-              if jj > window_width then
+              grid_col = grid_col + 1
+              if grid_col > window_width then
                 if not wrap_enabled then
                   goto to_next_line
                 end
-                i = i + 1
-                if i > grid_height then
+                grid_row = grid_row + 1
+                if grid_row > grid_height then
                   if not is_first_line then
                     prepare_lastlines(
                       grid,
@@ -366,10 +364,10 @@ M.load_base_grid = function(window, buffer)
                   end
                   return grid
                 end
-                jj = 1
+                grid_col = 1
                 lines_wrapped = lines_wrapped + 1
               end
-              cell = grid[i][jj]
+              cell = grid[grid_row][grid_col]
               local index = cindex - char_screen_col_start + 1
               cell.char = translated_char:sub(index, index)
               cell.hl_groups = hl_groups_copy(strtrans_hl_groups)
@@ -385,7 +383,7 @@ M.load_base_grid = function(window, buffer)
           assert(columns_occupied == 2)
           if wrap_enabled then
             if window_width == 1 then
-              for row = i + 1, grid_height do
+              for row = grid_row + 1, grid_height do
                 grid[row][1].char = ">"
                 grid[row][1].hl_groups = {
                   {
@@ -395,35 +393,35 @@ M.load_base_grid = function(window, buffer)
                 }
               end
               return grid
-            elseif jj + 1 == window_width then
-              grid[i][window_width].char = ">"
-              grid[i][window_width].hl_groups = {
+            elseif grid_col + 1 == window_width then
+              grid[grid_row][window_width].char = ">"
+              grid[grid_row][window_width].hl_groups = {
                 {
                   name = "NonText",
                   priority = vim.highlight.priorities.syntax,
                 },
               }
-              i = i + 1
-              if i == grid_height then
+              grid_row = grid_row + 1
+              if grid_row == grid_height then
                 return grid
               end
-              jj = 0
+              grid_col = 0
             end
           end
         end
         local replacer = is_tab and " " or "@"
         local hl_group = is_tab and "" or "WarningMsg"
         for cindex = char_screen_col_start, char_screen_col_end do
-          if cindex <= cmp then
+          if cindex <= cindex_lower_bound then
             goto to_next_replacer_char
           end
-          jj = jj + 1
-          if jj > window_width then
+          grid_col = grid_col + 1
+          if grid_col > window_width then
             if not wrap_enabled then
               goto to_next_line
             end
-            i = i + 1
-            if i > grid_height then
+            grid_row = grid_row + 1
+            if grid_row > grid_height then
               if not is_first_line then
                 prepare_lastlines(
                   grid,
@@ -435,10 +433,10 @@ M.load_base_grid = function(window, buffer)
               end
               return grid
             end
-            jj = 1
+            grid_col = 1
             lines_wrapped = lines_wrapped + 1
           end
-          cell = grid[i][jj]
+          cell = grid[grid_row][grid_col]
           cell.char = replacer
           cell.hl_groups[#cell.hl_groups + 1] = {
             name = hl_group,
@@ -447,13 +445,13 @@ M.load_base_grid = function(window, buffer)
           ::to_next_replacer_char::
         end
       else
-        jj = jj + 1
-        if jj > window_width then
+        grid_col = grid_col + 1
+        if grid_col > window_width then
           if not wrap_enabled then
             goto to_next_line
           end
-          i = i + 1
-          if i > grid_height then
+          grid_row = grid_row + 1
+          if grid_row > grid_height then
             if not is_first_line then
               prepare_lastlines(
                 grid,
@@ -465,12 +463,12 @@ M.load_base_grid = function(window, buffer)
             end
             return grid
           end
-          jj = 1
+          grid_col = 1
           lines_wrapped = lines_wrapped + 1
         end
-        cell = grid[i][jj]
+        cell = grid[grid_row][grid_col]
         cell.char = char
-        retrieve_hl_groups(buffer, cell.hl_groups, lineno, virtcol)
+        retrieve_hl_groups(buffer, cell.hl_groups, lineno, screen_col)
       end
       ::to_next_char::
     end
